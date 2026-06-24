@@ -1,0 +1,326 @@
+"""Geração probabilística dos perfis e dos instrumentos psicométricos.
+
+O módulo implementa o mecanismo estrutural da prova de conceito. Os parâmetros do
+arquivo de configuração são deliberadamente separados do código para que possam ser
+substituídos por evidência de literatura ou consenso de especialistas.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from .utils import sigmoid
+
+
+MARKERS = [
+    "ideacao_suicida",
+    "planejamento_suicida",
+    "autoagressao_iminente",
+    "risco_violencia",
+    "sintomas_psicoticos",
+    "uso_problematico_substancias",
+    "internacao_previa",
+    "agravamento_recente",
+    "suporte_social_baixo",
+]
+
+
+@dataclass(frozen=True)
+class SimulationResult:
+    """Resultado de uma etapa de simulação com dados e metadados."""
+
+    data: pd.DataFrame
+    metadata: dict[str, Any]
+
+
+def _sample_categories(
+    rng: np.random.Generator,
+    probabilities: dict[str, float],
+    n_records: int,
+) -> np.ndarray:
+    labels = list(probabilities.keys())
+    probs = np.asarray(list(probabilities.values()), dtype=float)
+    probs = probs / probs.sum()
+    return rng.choice(labels, size=n_records, p=probs)
+
+
+def _normalize_01(values: np.ndarray) -> np.ndarray:
+    minimum = np.nanmin(values)
+    maximum = np.nanmax(values)
+    if maximum - minimum < 1e-12:
+        return np.full_like(values, 0.5, dtype=float)
+    return (values - minimum) / (maximum - minimum)
+
+
+def _bernoulli_from_logit(
+    rng: np.random.Generator,
+    linear_predictor: np.ndarray,
+) -> np.ndarray:
+    return rng.binomial(1, sigmoid(linear_predictor)).astype(int)
+
+
+def generate_profiles(config: dict[str, Any], seed: int) -> SimulationResult:
+    """Gera atributos estruturados, gravidade latente e marcadores verdadeiros.
+
+    A gravidade latente ``u_latent`` é preservada apenas para auditoria do gerador.
+    Ela não será incluída nos conjuntos analíticos destinados aos classificadores.
+    """
+    simulation = config["simulation"]
+    population = config["population"]
+    vulnerability_cfg = config["vulnerability"]
+    n_records = int(simulation["n_records"])
+    rng = np.random.default_rng(seed)
+
+    patient_id = [f"SYN-{seed}-{index:06d}" for index in range(1, n_records + 1)]
+    age = np.clip(rng.normal(loc=42, scale=14, size=n_records), simulation["adult_age_min"], simulation["adult_age_max"])
+    age = np.rint(age).astype(int)
+    gender = _sample_categories(rng, population["gender_probabilities"], n_records)
+    education = _sample_categories(rng, population["education_probabilities"], n_records)
+    income = rng.lognormal(
+        mean=float(population["income_lognormal_meanlog"]),
+        sigma=float(population["income_lognormal_sigma"]),
+        size=n_records,
+    )
+
+    # Os determinantes sociais abaixo são gerados antes da gravidade latente,
+    # pois integram o índice de vulnerabilidade estrutural do cenário.
+    education_low = (education == "fundamental_ou_menos").astype(int)
+    age_centered = (age - np.mean(age)) / np.std(age)
+    food_insecurity = _bernoulli_from_logit(rng, -0.85 + 0.65 * education_low - 0.12 * age_centered)
+    poor_housing = _bernoulli_from_logit(rng, -1.10 + 0.55 * education_low + 0.80 * food_insecurity)
+    income_normalized = _normalize_01(income)
+
+    weights_cfg = vulnerability_cfg["weights"]
+    weights = np.asarray(
+        [
+            weights_cfg["renda_baixa"],
+            weights_cfg["escolaridade_baixa"],
+            weights_cfg["inseguranca_alimentar"],
+            weights_cfg["moradia_precaria"],
+        ],
+        dtype=float,
+    )
+    if np.any(weights < 0) or not np.isclose(weights.sum(), 1.0):
+        raise ValueError("Os pesos de vulnerabilidade devem ser não negativos e somar 1.")
+
+    vulnerability = (
+        weights[0] * (1 - income_normalized)
+        + weights[1] * education_low
+        + weights[2] * food_insecurity
+        + weights[3] * poor_housing
+    )
+    vulnerability = np.clip(vulnerability, 0, 1)
+
+    # U é um construto latente do gerador. O termo aleatório evita relação
+    # perfeitamente determinística entre vulnerabilidade e sofrimento psíquico.
+    u_latent = np.clip(rng.normal(0, 1, n_records) + 0.75 * (vulnerability - vulnerability.mean()), -3.5, 3.5)
+
+    # Condições clínicas e utilização de serviços, todas condicionais a X, V e U.
+    mental_health_history = _bernoulli_from_logit(rng, -0.45 + 0.50 * vulnerability + 0.85 * u_latent)
+    chronic_condition = _bernoulli_from_logit(rng, -0.40 + 0.42 * (age > 50).astype(int) + 0.18 * vulnerability)
+    recent_service_contact = _bernoulli_from_logit(rng, -0.20 + 0.40 * mental_health_history + 0.50 * u_latent)
+    previous_admission = _bernoulli_from_logit(rng, -2.55 + 0.85 * mental_health_history + 0.60 * u_latent)
+    substance_use = _bernoulli_from_logit(rng, -2.05 + 0.35 * vulnerability + 0.55 * u_latent)
+
+    # Marcadores clínicos verdadeiros Z*. A lógica de dependência cria combinações
+    # plausíveis; por exemplo, planejamento é gerado apenas se existe ideação atual.
+    suicidal_ideation = _bernoulli_from_logit(rng, -3.65 + 1.55 * u_latent + 0.25 * vulnerability)
+    suicide_planning = np.where(
+        suicidal_ideation == 1,
+        _bernoulli_from_logit(rng, -1.65 + 0.85 * u_latent),
+        0,
+    )
+    imminent_self_harm = np.where(
+        suicide_planning == 1,
+        _bernoulli_from_logit(rng, -2.10 + 0.90 * u_latent),
+        0,
+    )
+    violence_risk = _bernoulli_from_logit(rng, -4.30 + 1.15 * u_latent + 0.30 * substance_use)
+    psychotic_symptoms = _bernoulli_from_logit(rng, -4.10 + 1.30 * u_latent)
+    recent_worsening = _bernoulli_from_logit(rng, -1.55 + 0.90 * u_latent + 0.20 * vulnerability)
+    low_social_support = _bernoulli_from_logit(rng, -0.75 + 1.00 * vulnerability)
+
+    # Comprometimento funcional é ordinal: 0=ausente, 1=leve, 2=moderado, 3=importante.
+    functional_signal = 0.85 * u_latent + 0.35 * vulnerability + rng.normal(0, 0.70, n_records)
+    functional_impairment = np.digitize(functional_signal, bins=[-0.65, 0.25, 1.15], right=False).astype(int)
+
+    profiles = pd.DataFrame(
+        {
+            "patient_id": patient_id,
+            "seed": seed,
+            "age_years": age,
+            "gender_category": gender,
+            "education": education,
+            "income_brl": np.round(income, 2),
+            "income_normalized": np.round(income_normalized, 6),
+            "food_insecurity": food_insecurity,
+            "poor_housing": poor_housing,
+            "social_vulnerability": np.round(vulnerability, 6),
+            "u_latent_audit_only": np.round(u_latent, 6),
+            "mental_health_history": mental_health_history,
+            "chronic_condition": chronic_condition,
+            "recent_service_contact": recent_service_contact,
+            "ztrue_internacao_previa": previous_admission,
+            "ztrue_uso_problematico_substancias": substance_use,
+            "ztrue_ideacao_suicida": suicidal_ideation,
+            "ztrue_planejamento_suicida": suicide_planning,
+            "ztrue_autoagressao_iminente": imminent_self_harm,
+            "ztrue_risco_violencia": violence_risk,
+            "ztrue_sintomas_psicoticos": psychotic_symptoms,
+            "ztrue_agravamento_recente": recent_worsening,
+            "ztrue_suporte_social_baixo": low_social_support,
+            "ztrue_comprometimento_funcional": functional_impairment,
+        }
+    )
+
+    # Metadados permitem registrar os parâmetros e a semântica das codificações.
+    metadata = {
+        "seed": seed,
+        "n_records": n_records,
+        "marker_semantics": {
+            "ztrue_comprometimento_funcional": {
+                "0": "ausente",
+                "1": "leve",
+                "2": "moderado",
+                "3": "importante",
+            }
+        },
+        "warning": "Parâmetros ilustrativos; calibrar antes do experimento definitivo.",
+    }
+    return SimulationResult(profiles, metadata)
+
+
+def _sample_ordinal_items(
+    rng: np.random.Generator,
+    latent_signal: np.ndarray,
+    n_items: int,
+    thresholds: list[float],
+    discrimination: float,
+    direction: float = 1.0,
+) -> np.ndarray:
+    """Gera respostas ordinais com um modelo graduado simplificado.
+
+    O código não pretende estimar parâmetros psicométricos reais. Ele produz itens
+    coerentes com um traço latente e permite calcular totais somente depois da
+    geração das respostas.
+    """
+    n = latent_signal.shape[0]
+    n_categories = len(thresholds) + 1
+    responses = np.zeros((n, n_items), dtype=int)
+    base_thresholds = np.asarray(thresholds, dtype=float)
+
+    for item_index in range(n_items):
+        item_difficulty = rng.normal(0, 0.20)
+        signal = direction * discrimination * latent_signal + rng.normal(0, 0.35, n) - item_difficulty
+        cumulative = sigmoid(signal[:, None] - base_thresholds[None, :])
+        # P(Y=0)=1-P(Y>=1); P(Y=c)=P(Y>=c)-P(Y>=c+1); P(Y=max)=P(Y>=max)
+        probabilities = np.empty((n, n_categories), dtype=float)
+        probabilities[:, 0] = 1 - cumulative[:, 0]
+        for category in range(1, n_categories - 1):
+            probabilities[:, category] = cumulative[:, category - 1] - cumulative[:, category]
+        probabilities[:, -1] = cumulative[:, -1]
+        probabilities = np.clip(probabilities, 1e-8, None)
+        probabilities = probabilities / probabilities.sum(axis=1, keepdims=True)
+        random_values = rng.random(n)
+        responses[:, item_index] = (random_values[:, None] > np.cumsum(probabilities, axis=1)).sum(axis=1)
+    return responses
+
+
+def simulate_psychometrics(
+    profiles: pd.DataFrame,
+    config: dict[str, Any],
+    seed: int,
+) -> SimulationResult:
+    """Simula PHQ-9, GAD-7 e IDATE-Estado item a item.
+
+    Os itens do IDATE são identificados apenas por número, sem reproduzir texto do
+    instrumento. Os itens definidos como reversos têm sua pontuação invertida antes
+    do cálculo do total, preservando a faixa 20--80.
+    """
+    rng = np.random.default_rng(seed + 1000)
+    settings = config["psychometrics"]
+    n = len(profiles)
+    u = profiles["u_latent_audit_only"].to_numpy(dtype=float)
+    v = profiles["social_vulnerability"].to_numpy(dtype=float)
+    service = profiles["recent_service_contact"].to_numpy(dtype=float)
+    marker_effect = (
+        0.55 * profiles["ztrue_agravamento_recente"].to_numpy(dtype=float)
+        + 0.60 * profiles["ztrue_uso_problematico_substancias"].to_numpy(dtype=float)
+        + 0.45 * (profiles["ztrue_comprometimento_funcional"].to_numpy(dtype=float) >= 2)
+    )
+
+    # O sinal latente é compartilhado parcialmente entre as escalas para criar
+    # associações plausíveis, mas cada instrumento recebe perturbação específica.
+    depression_signal = u + 0.35 * v + 0.18 * service + marker_effect + rng.normal(0, 0.25, n)
+    anxiety_signal = 0.85 * u + 0.25 * v + 0.10 * service + 0.50 * marker_effect + rng.normal(0, 0.30, n)
+
+    phq_cfg = settings["phq9"]
+    gad_cfg = settings["gad7"]
+    stai_cfg = settings["state_anxiety"]
+
+    phq_items = _sample_ordinal_items(
+        rng,
+        depression_signal,
+        int(phq_cfg["n_items"]),
+        list(phq_cfg["thresholds"]),
+        float(phq_cfg["discrimination"]),
+    )
+    gad_items = _sample_ordinal_items(
+        rng,
+        anxiety_signal,
+        int(gad_cfg["n_items"]),
+        list(gad_cfg["thresholds"]),
+        float(gad_cfg["discrimination"]),
+    )
+
+    # IDATE: gera respostas brutas 1..4. Para itens reversos, maior ansiedade
+    # produz respostas menores na forma bruta; a pontuação é invertida depois.
+    stai_n_items = int(stai_cfg["n_items"])
+    reverse_indices = {int(index) - 1 for index in stai_cfg["reverse_scored_items"]}
+    stai_raw = np.zeros((n, stai_n_items), dtype=int)
+    for item_index in range(stai_n_items):
+        direction = -1.0 if item_index in reverse_indices else 1.0
+        item_zero_based = _sample_ordinal_items(
+            rng,
+            anxiety_signal,
+            1,
+            list(stai_cfg["thresholds"]),
+            float(stai_cfg["discrimination"]),
+            direction=direction,
+        )[:, 0]
+        stai_raw[:, item_index] = item_zero_based + 1  # transforma 0..3 em 1..4
+
+    stai_scored = stai_raw.copy()
+    for item_index in reverse_indices:
+        stai_scored[:, item_index] = 5 - stai_scored[:, item_index]
+
+    output: dict[str, Any] = {"patient_id": profiles["patient_id"].to_numpy()}
+    for item_index in range(phq_items.shape[1]):
+        output[f"phq9_item_{item_index + 1:02d}"] = phq_items[:, item_index]
+    for item_index in range(gad_items.shape[1]):
+        output[f"gad7_item_{item_index + 1:02d}"] = gad_items[:, item_index]
+    for item_index in range(stai_raw.shape[1]):
+        output[f"idate_estado_item_{item_index + 1:02d}_raw"] = stai_raw[:, item_index]
+        output[f"idate_estado_item_{item_index + 1:02d}_score"] = stai_scored[:, item_index]
+
+    output["phq9_total"] = phq_items.sum(axis=1)
+    output["gad7_total"] = gad_items.sum(axis=1)
+    output["idate_estado_total"] = stai_scored.sum(axis=1)
+    output["phq9_band"] = pd.cut(
+        output["phq9_total"], bins=[-1, 4, 9, 14, 19, 27], labels=["minimo", "leve", "moderado", "moderadamente_grave", "grave"]
+    ).astype(str)
+    output["gad7_band"] = pd.cut(
+        output["gad7_total"], bins=[-1, 4, 9, 14, 21], labels=["minimo", "leve", "moderado", "grave"]
+    ).astype(str)
+
+    psychometrics = pd.DataFrame(output)
+    metadata = {
+        "seed": seed + 1000,
+        "idate_reverse_items": sorted(index + 1 for index in reverse_indices),
+        "score_ranges": {"phq9_total": [0, 27], "gad7_total": [0, 21], "idate_estado_total": [20, 80]},
+    }
+    return SimulationResult(psychometrics, metadata)

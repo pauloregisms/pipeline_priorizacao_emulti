@@ -1,0 +1,30 @@
+# Ambiente Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Jupyter / Colab
+.ipynb_checkpoints/
+
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+
+# Artefatos gerados por execução
+artifacts/*
+!artifacts/.gitkeep
+
+# Documentação gerada localmente
+site/
+
+# Sistema operacional e IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
