@@ -6,6 +6,21 @@ Este repositório implementa uma simulação computacional para testar, em ambie
 
 A finalidade é metodológica: avaliar plausibilidade, rastreabilidade, consistência interna e robustez do pipeline. Métricas elevadas neste repositório indicam apenas capacidade de recuperar relações e regras programadas no próprio cenário de simulação.
 
+## Vinculação acadêmica
+
+Este projeto é resultado da pesquisa de mestrado de **Renata Alves dos Santos**,
+formanda do Curso de Mestrado Profissional em Saúde da Família (MPSF), vinculado
+ao Programa de Pós-Graduação em Saúde da Família (PPGSF), da Universidade
+Estadual Vale do Acaraú (UVA).
+
+A pesquisa é orientada pelo Professor Dr. Paulo Regis Menezes Sousa.
+
+O repositório reúne os artefatos computacionais desenvolvidos para a dissertação,
+incluindo a simulação de dados, a geração de narrativas clínicas sintéticas, a
+extração de marcadores e a classificação de prioridade de referência simulada
+para encaminhamentos em saúde mental no contexto da Atenção Primária à Saúde
+e da equipe e-Multi.
+
 ## Comece aqui
 
 | Perfil | Próxima leitura |
