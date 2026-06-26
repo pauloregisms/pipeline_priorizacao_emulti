@@ -4,51 +4,51 @@
 
 ```mermaid
 flowchart LR
-    X["X: atributos estruturados"] --> V["V: vulnerabilidade social"]
-    X --> U["U: gravidade latente\n(apenas gerador)"]
-    V --> U
-    U --> S["S: itens e escores\nPHQ-9, GAD-7, IDATE"]
-    X --> ZT["Z*: marcadores verdadeiros"]
-    V --> ZT
-    U --> ZT
-    X --> T["T: narrativa SOAP"]
-    S --> T
-    ZT --> T
-    T --> ZH["Zhat: marcadores extraídos"]
-    X --> YR["Yref: prioridade simulada"]
-    S --> YR
-    ZT --> YR
-    X --> M["Modelos / regra-base"]
-    S --> M
-    ZH --> M
-    M --> YH["Yhat: prioridade prevista"]
+    DADOS["dados_estruturados\natributos observáveis"] --> VULN["vulnerabilidade_social"]
+    DADOS --> GRAV["gravidade_latente_auditoria\nuso exclusivo do gerador"]
+    VULN --> GRAV
+    GRAV --> INDIC["indicadores_psicometricos\nPHQ-9, GAD-7, IDATE-Estado"]
+    DADOS --> ORIGEM["marcadores_origem\ndefinidos pelo cenário"]
+    VULN --> ORIGEM
+    GRAV --> ORIGEM
+    DADOS --> NARR["narrativa_clinica\nformato SOAP"]
+    INDIC --> NARR
+    ORIGEM --> NARR
+    NARR --> EXTRAIDOS["marcadores_extraidos\nrecuperados do texto"]
+    DADOS --> REFERENCIA["prioridade_referencia\nregra simulada"]
+    INDIC --> REFERENCIA
+    ORIGEM --> REFERENCIA
+    DADOS --> MODELOS["Regra-base e classificadores"]
+    INDIC --> MODELOS
+    EXTRAIDOS --> MODELOS
+    MODELOS --> PREVISTA["prioridade_prevista"]
 ```
 
 ## Ordem das etapas
 
-1. `01_generate_profiles.py` gera atributos, vulnerabilidade, `U` e `Z*`.
-2. `02_simulate_psychometrics.py` produz itens e totais de escalas a partir de sinais latentes e atributos.
+1. `01_generate_profiles.py` gera `dados_estruturados`, `vulnerabilidade_social`, `gravidade_latente_auditoria` e `marcadores_origem`.
+2. `02_simulate_psychometrics.py` produz itens e totais de `indicadores_psicometricos` a partir de sinais latentes e atributos.
 3. `03_quality_control_base.py` valida faixas, somas, consistência e propriedades descritivas.
-4. `04_generate_narratives.py` gera `T` a partir de `X`, `S` e `Z*`.
-5. `05_assign_reference_priority.py` gera `Yref` por uma matriz de referência.
-6. `06_extract_markers.py` transforma `T` em `Zhat`.
+4. `04_generate_narratives.py` gera `narrativa_clinica` a partir de `dados_estruturados`, `indicadores_psicometricos` e `marcadores_origem`.
+5. `05_assign_reference_priority.py` gera `prioridade_referencia` por uma matriz de regras simuladas.
+6. `06_extract_markers.py` transforma `narrativa_clinica` em `marcadores_extraidos`.
 7. As etapas seguintes validam a extração, formam conjuntos, treinam modelos, avaliam robustez e geram relatório.
 
-A ordem entre a etapa textual e a prioridade é intencional: ela impede que `Yref` seja fornecida ao gerador de texto ou se torne uma pista lexical acidental.
+A ordem entre a etapa textual e a prioridade é intencional: ela impede que `prioridade_referencia` seja fornecida ao gerador de texto ou se torne uma pista lexical acidental.
 
 ## Três conjuntos analíticos
 
 | Nome do arquivo | Conteúdo | Papel analítico |
 |---|---|---|
-| `01_estruturados_escores.csv` | `X + S` | Cenário mínimo com informação estruturada e psicométrica |
-| `02_limite_superior_ztrue.csv` | `X + S + Z*` | Limite superior: assume acesso perfeito aos marcadores do cenário |
-| `03_operacional_zhat.csv` | `X + S + Zhat` | Cenário operacional: usa informação recuperada da narrativa |
+| `01_estruturados_escores.csv` | `dados_estruturados + indicadores_psicometricos` | Cenário mínimo com informação estruturada e psicométrica |
+| `02_limite_superior_marcadores_origem.csv` | `dados_estruturados + indicadores_psicometricos + marcadores_origem` | Limite superior: assume acesso direto aos marcadores definidos pelo cenário |
+| `03_operacional_marcadores_extraidos.csv` | `dados_estruturados + indicadores_psicometricos + marcadores_extraidos` | Cenário operacional: usa informação recuperada da narrativa |
 
 A diferença entre os conjuntos de limite superior e operacional estima a perda atribuível à extração de informações a partir de texto.
 
 ## Prioridade de referência
 
-`Yref` é uma variável ordinal com quatro categorias: `baixa`, `moderada`, `alta` e `urgente`. A classe urgente é uma categoria de segurança simulada, não uma posição comum em fila.
+`prioridade_referencia` é uma variável ordinal com quatro categorias: `baixa`, `moderada`, `alta` e `urgente`. A classe urgente é uma categoria de segurança simulada, não uma posição comum em fila.
 
 A regra atual combina:
 
@@ -66,4 +66,4 @@ A modelagem usa uma regra-base e modelos treináveis. A avaliação inclui valid
 
 Cada execução tem um `run_id`. O pipeline cria diretórios ordenados por etapa em `artifacts/<run_id>/`, grava manifests e preserva sementes, parâmetros, hashes e metadados de geração.
 
-Consulte [Contratos de dados](../reference/contratos-de-dados.md) e [Artefatos](../reference/artefatos.md).
+Consulte [Nomenclatura do pipeline](../reference/nomenclatura.md), [Contratos de dados](../reference/contratos-de-dados.md) e [Artefatos](../reference/artefatos.md).

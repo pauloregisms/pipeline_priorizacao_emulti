@@ -14,20 +14,20 @@ Todos os scripts aceitam, no mínimo:
 | Script | Função | Entrada principal | Saídas principais |
 |---|---|---|---|
 | `00_prepare_workspace.py` | prepara diretório e snapshot do ambiente | YAML | metadados de ambiente |
-| `01_generate_profiles.py` | gera `X`, `V`, `U` e `Z*` | YAML | `profiles.csv` |
-| `02_simulate_psychometrics.py` | gera itens e totais de `S` | perfis + YAML | `psychometrics.csv` |
+| `01_generate_profiles.py` | gera `dados_estruturados`, `vulnerabilidade_social`, `gravidade_latente_auditoria` e `marcadores_origem` | YAML | `profiles.csv` |
+| `02_simulate_psychometrics.py` | gera itens e totais de `indicadores_psicometricos` | perfis + YAML | `psychometrics.csv` |
 | `03_quality_control_base.py` | valida faixas e consistência | perfis + escalas | tabelas e `quality_summary.json` |
-| `04_generate_narratives.py` | gera `T` sem `Yref` | `X`, `S`, `Z*` | `narratives.jsonl` |
-| `05_assign_reference_priority.py` | gera `Yref` | `X`, `S`, `Z*` | `priority_reference.csv` |
-| `06_extract_markers.py` | extrai `Zhat` | narrativas | `markers_extracted.csv` |
+| `04_generate_narratives.py` | gera `narrativa_clinica` sem `prioridade_referencia`, por provedor `template` ou `gemini` | `dados_estruturados`, `indicadores_psicometricos`, `marcadores_origem` | `narratives.jsonl` e manifest do provedor |
+| `05_assign_reference_priority.py` | gera `prioridade_referencia` | `dados_estruturados`, `indicadores_psicometricos`, `marcadores_origem` | `prioridade_referencia.csv` |
+| `06_extract_markers.py` | extrai `marcadores_extraidos` | narrativas | `marcadores_extraidos.csv` |
 | `07_create_annotation_sample.py` | cria amostra para dupla anotação | narrativas + estratos | template e auditoria |
-| `08_validate_extraction.py` | mede extração contra `Z*` e anotadores | `Z*`, `Zhat`, CSVs opcionais | F1 e kappa |
+| `08_validate_extraction.py` | mede extração contra `marcadores_origem` e anotadores | `marcadores_origem`, `marcadores_extraidos`, CSVs opcionais | F1 e kappa |
 | `09_build_analytical_datasets.py` | cria três conjuntos | artefatos anteriores | CSVs analíticos |
 | `10_train_evaluate_models.py` | valida modelos | conjunto analítico | previsões, métricas, modelos |
 | `11_explain_models.py` | coeficientes e SHAP no teste | modelos + teste | arquivos de explicação |
 | `12_run_sensitivity.py` | executa cenários configurados | YAML | consolidação entre cenários |
 | `13_generate_report.py` | monta síntese Markdown | artefatos | `report.md` |
-| `14_export_priority_table.py` | consolida tabela ordenada da classificação final | perfis, escalas, `Zhat` e previsões do teste final | CSV, HTML e manifesto de visualização |
+| `14_export_priority_table.py` | consolida tabela ordenada da classificação final | perfis, escalas, `marcadores_extraidos` e previsões do teste final | CSV, HTML e manifesto de visualização |
 
 ## Orquestrador
 
@@ -63,7 +63,7 @@ python scripts/08_validate_extraction.py \
 python scripts/10_train_evaluate_models.py \
   --config config/base.yaml \
   --run-id baseline \
-  --dataset 03_operacional_zhat \
+  --dataset 03_operacional_marcadores_extraidos \
   --models rule_baseline,ordinal_logit,random_forest,xgboost
 ```
 
@@ -90,7 +90,7 @@ python scripts/12_run_sensitivity.py \
 python scripts/14_export_priority_table.py \
   --config config/base.yaml \
   --run-id baseline \
-  --dataset 03_operacional_zhat \
+  --dataset 03_operacional_marcadores_extraidos \
   --model best
 ```
 

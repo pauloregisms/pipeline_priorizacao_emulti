@@ -1,4 +1,4 @@
-"""Etapa 5: produz a prioridade de referência simulada Yref a partir de X, S e Z*."""
+"""Etapa 5: produz a prioridade de referência simulada prioridade_referencia a partir de dados estruturados, indicadores psicométricos e marcadores de origem."""
 
 from __future__ import annotations
 
@@ -18,18 +18,18 @@ def main() -> None:
     profiles = pd.read_csv(stage_dir(config, args.run_id, "01_profiles") / "profiles.csv")
     psychometrics = pd.read_csv(stage_dir(config, args.run_id, "02_psychometrics") / "psychometrics.csv")
 
-    # Esta etapa é independente da narrativa. Portanto, y_ref nunca retroalimenta a
+    # Esta etapa é independente da narrativa. Portanto, prioridade_referencia nunca retroalimenta a
     # produção de texto e não pode ser considerado como pista lexical para o extrator.
     priority = assign_reference_priority(profiles, psychometrics, config, effective_seed(config))
     output = stage_dir(config, args.run_id, "05_priority")
-    save_csv(priority, output / "priority_reference.csv")
+    save_csv(priority, output / "prioridade_referencia.csv")
     write_json(output / "priority_metadata.json", {
         "priority_order": ["baixa", "moderada", "alta", "urgente"],
         "interpretation": "prioridade de referência simulada; não é prioridade clínica real",
         "seed": effective_seed(config) + 3000,
-        "class_distribution": priority["y_ref"].value_counts().sort_index().to_dict(),
+        "class_distribution": priority["prioridade_referencia"].value_counts().sort_index().to_dict(),
     })
-    logger.info("Distribuição de Yref: %s", priority["y_ref"].value_counts().to_dict())
+    logger.info("Distribuição de prioridade_referencia: %s", priority["prioridade_referencia"].value_counts().to_dict())
 
 
 if __name__ == "__main__":

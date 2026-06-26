@@ -22,7 +22,7 @@ python scripts/14_export_priority_table.py \
   --run-id baseline
 ```
 
-Por padrão, o script usa o conjunto `03_operacional_zhat`, que corresponde ao cenário operacional: atributos estruturados, escores e marcadores extraídos das narrativas.
+Por padrão, o script usa o conjunto `03_operacional_marcadores_extraidos`, que corresponde ao cenário operacional: atributos estruturados, escores e marcadores extraídos das narrativas.
 
 ## Seleção do modelo
 
@@ -34,7 +34,7 @@ Para selecionar um modelo de forma explícita:
 python scripts/14_export_priority_table.py \
   --config config/base.yaml \
   --run-id baseline \
-  --dataset 03_operacional_zhat \
+  --dataset 03_operacional_marcadores_extraidos \
   --model xgboost
 ```
 
@@ -105,9 +105,9 @@ root = Path("artifacts") / run_id
 
 profiles = pd.read_csv(root / "01_profiles" / "profiles.csv")
 psychometrics = pd.read_csv(root / "02_psychometrics" / "psychometrics.csv")
-extracted = pd.read_csv(root / "06_extraction" / "markers_extracted.csv")
+extracted = pd.read_csv(root / "06_extraction" / "marcadores_extraidos.csv")
 predictions = pd.read_csv(
-    root / "10_modeling" / "03_operacional_zhat" / "xgboost" / "final_test_predictions.csv"
+    root / "10_modeling" / "03_operacional_marcadores_extraidos" / "xgboost" / "final_test_predictions.csv"
 )
 
 tabela = build_simplified_classification_table(
@@ -122,7 +122,7 @@ display(display_simplified_classification_table(tabela, n_rows=30))
 
 ## Exibir a referência simulada para auditoria
 
-Por padrão, a tabela não mostra `Yref`, pois esse rótulo existe apenas para avaliação experimental e não estaria disponível em um cenário operacional hipotético. Para auditoria da classificação, use:
+Por padrão, a tabela não mostra `prioridade_referencia`, pois esse rótulo existe apenas para avaliação experimental e não estaria disponível em um cenário operacional hipotético. Para auditoria da classificação, use:
 
 ```bash
 python scripts/14_export_priority_table.py \

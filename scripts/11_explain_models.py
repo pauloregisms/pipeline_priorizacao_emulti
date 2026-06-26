@@ -19,9 +19,9 @@ def _rebuild_final_test(frame: pd.DataFrame, config: dict):
     """Reconstrói deterministicamente a mesma partição final usada na etapa 10."""
     from sklearn.model_selection import train_test_split
 
-    target_columns = ["patient_id", "y_ref", "y_ref_code", "urgent_rule_triggered"]
+    target_columns = ["patient_id", "prioridade_referencia", "prioridade_referencia_codigo", "urgent_rule_triggered"]
     X = frame.drop(columns=target_columns)
-    y = frame["y_ref_code"].to_numpy(dtype=int)
+    y = frame["prioridade_referencia_codigo"].to_numpy(dtype=int)
     ids = frame["patient_id"]
     _, X_test, _, y_test, _, ids_test = train_test_split(
         X,
@@ -78,7 +78,7 @@ def _tree_shap_importance(pipeline, X_test: pd.DataFrame) -> tuple[pd.DataFrame,
 
 def main() -> None:
     parser = common_parser("Explica modelos usando somente o conjunto-teste final.")
-    parser.add_argument("--dataset", default="03_operacional_zhat", help="Conjunto analítico a explicar.")
+    parser.add_argument("--dataset", default="03_operacional_marcadores_extraidos", help="Conjunto analítico a explicar.")
     args = parser.parse_args()
     config = load_config(args.config)
     logger = setup_logging("11_explain_models")
@@ -121,7 +121,7 @@ def main() -> None:
         "interpretation": "SHAP/coeficientes descrevem contribuição para a previsão do modelo, não causalidade clínica.",
         "test_ids_file": "test_patient_ids.csv",
     })
-    save_csv(pd.DataFrame({"patient_id": ids_test.to_numpy(), "y_ref_code": y_test}), output / "test_patient_ids.csv")
+    save_csv(pd.DataFrame({"patient_id": ids_test.to_numpy(), "prioridade_referencia_codigo": y_test}), output / "test_patient_ids.csv")
     logger.info("Explicações concluídas em %s", output)
 
 

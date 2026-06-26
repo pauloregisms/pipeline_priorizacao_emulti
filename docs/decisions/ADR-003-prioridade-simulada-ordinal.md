@@ -10,7 +10,7 @@ O projeto não possui decisões clínicas reais ou desfechos independentes de pa
 
 ## Decisão
 
-`Yref` terá quatro categorias ordenadas: baixa, moderada, alta e urgente. A classe urgente será tratada como categoria simulada de segurança e receberá precedência por regras explícitas. `Yref` será criado por `X`, `S`, `Z*` e matriz protocolada, após a geração de narrativa.
+`prioridade_referencia` terá quatro categorias ordenadas: baixa, moderada, alta e urgente. A classe urgente será tratada como categoria simulada de segurança e receberá precedência por regras explícitas. `prioridade_referencia` será criado por `dados_estruturados`, `indicadores_psicometricos`, `marcadores_origem` e matriz protocolada, após a geração de narrativa.
 
 ## Consequências
 

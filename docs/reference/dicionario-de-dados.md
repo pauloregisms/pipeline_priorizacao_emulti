@@ -2,7 +2,7 @@
 
 Este dicionário descreve as variáveis implementadas no cenário-base. Valores e distribuições são ilustrativos até calibração formal.
 
-## Atributos estruturados (`X`)
+## Atributos estruturados (`dados_estruturados`)
 
 | Variável | Tipo | Faixa / categorias | Papel |
 |---|---|---|---|
@@ -24,24 +24,24 @@ Este dicionário descreve as variáveis implementadas no cenário-base. Valores 
 
 | Variável | Tipo | Uso permitido |
 |---|---|---|
-| `u_latent_audit_only` | numérica | apenas auditoria do gerador, nunca modelagem |
+| `gravidade_latente_auditoria` | numérica | apenas auditoria do gerador, nunca modelagem |
 
-## Marcadores verdadeiros (`Z*`)
+## Marcadores de origem (`marcadores_origem`)
 
 | Variável | Tipo | Codificação |
 |---|---|---|
-| `ztrue_ideacao_suicida` | binária | 0 ausente; 1 presente no cenário |
-| `ztrue_planejamento_suicida` | binária | 0/1; requer ideação no cenário-base |
-| `ztrue_autoagressao_iminente` | binária | 0/1; requer planejamento no cenário-base |
-| `ztrue_risco_violencia` | binária | 0/1 |
-| `ztrue_sintomas_psicoticos` | binária | 0/1 |
-| `ztrue_uso_problematico_substancias` | binária | 0/1 |
-| `ztrue_internacao_previa` | binária | 0/1 |
-| `ztrue_agravamento_recente` | binária | 0/1 |
-| `ztrue_suporte_social_baixo` | binária | 0/1 |
-| `ztrue_comprometimento_funcional` | ordinal | 0 ausente; 1 leve; 2 moderado; 3 importante |
+| `marcadores_origem_ideacao_suicida` | binária | 0 ausente; 1 presente no cenário |
+| `marcadores_origem_planejamento_suicida` | binária | 0/1; requer ideação no cenário-base |
+| `marcadores_origem_autoagressao_iminente` | binária | 0/1; requer planejamento no cenário-base |
+| `marcadores_origem_risco_violencia` | binária | 0/1 |
+| `marcadores_origem_sintomas_psicoticos` | binária | 0/1 |
+| `marcadores_origem_uso_problematico_substancias` | binária | 0/1 |
+| `marcadores_origem_internacao_previa` | binária | 0/1 |
+| `marcadores_origem_agravamento_recente` | binária | 0/1 |
+| `marcadores_origem_suporte_social_baixo` | binária | 0/1 |
+| `marcadores_origem_comprometimento_funcional` | ordinal | 0 ausente; 1 leve; 2 moderado; 3 importante |
 
-## Instrumentos psicométricos (`S`)
+## Instrumentos psicométricos (`indicadores_psicometricos`)
 
 | Instrumento | Itens | Escala por item | Total |
 |---|---:|---:|---:|
@@ -51,7 +51,7 @@ Este dicionário descreve as variáveis implementadas no cenário-base. Valores 
 
 Os itens são gerados primeiro. O total é sempre calculado pela soma posterior.
 
-## Prioridade de referência (`Yref`)
+## Prioridade de referência (`prioridade_referencia`)
 
 | Rótulo | Código | Papel |
 |---|---:|---|
@@ -60,8 +60,8 @@ Os itens são gerados primeiro. O total é sempre calculado pela soma posterior.
 | `alta` | 2 | prioridade de referência simulada |
 | `urgente` | 3 | categoria simulada de segurança |
 
-`Yref` não é diagnóstico, prognóstico ou decisão clínica observada.
+`prioridade_referencia` não é diagnóstico, prognóstico ou decisão clínica observada.
 
-## Marcadores extraídos (`Zhat`)
+## Marcadores extraídos (`marcadores_extraidos`)
 
-Veja [Ontologia de marcadores](ontologia-de-marcadores.md) e [Contratos de dados](contratos-de-dados.md). `Zhat` é derivado de texto e pode divergir de `Z*` por erro de extração ou cenário de ruído.
+Veja [Ontologia de marcadores](ontologia-de-marcadores.md) e [Contratos de dados](contratos-de-dados.md). `marcadores_extraidos` é derivado de texto e pode divergir de `marcadores_origem` por erro de extração ou cenário de ruído.

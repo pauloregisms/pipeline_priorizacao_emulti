@@ -6,16 +6,16 @@ A ontologia operacional está implementada em `src/emulti_pipeline/extraction.py
 
 | Código | Significado no cenário | Saída extraída principal |
 |---|---|---|
-| `ideacao_suicida` | pensamentos de morte/ideação atual ou negada | `zhat_ideacao_suicida_*` |
-| `planejamento_suicida` | planejamento de autoagressão | `zhat_planejamento_suicida_*` |
-| `autoagressao_iminente` | risco iminente de autoagressão | `zhat_autoagressao_iminente_*` |
-| `risco_violencia` | risco de comportamento agressivo/violência | `zhat_risco_violencia_*` |
-| `sintomas_psicoticos` | percepção alterada, ideias de referência ou sintoma psicótico | `zhat_sintomas_psicoticos_*` |
-| `uso_problematico_substancias` | uso de álcool ou substâncias com prejuízo | `zhat_uso_problematico_substancias_*` |
-| `internacao_previa` | internação anterior relacionada a sofrimento psíquico | `zhat_internacao_previa_*` |
-| `agravamento_recente` | piora recente de sintomas | `zhat_agravamento_recente_*` |
-| `suporte_social_baixo` | rede de apoio limitada | `zhat_suporte_social_baixo_*` |
-| `comprometimento_funcional` | dificuldade leve, moderada ou importante em atividades | `zhat_comprometimento_funcional_*` |
+| `ideacao_suicida` | pensamentos de morte/ideação atual ou negada | `marcadores_extraidos_ideacao_suicida_*` |
+| `planejamento_suicida` | planejamento de autoagressão | `marcadores_extraidos_planejamento_suicida_*` |
+| `autoagressao_iminente` | risco iminente de autoagressão | `marcadores_extraidos_autoagressao_iminente_*` |
+| `risco_violencia` | risco de comportamento agressivo/violência | `marcadores_extraidos_risco_violencia_*` |
+| `sintomas_psicoticos` | percepção alterada, ideias de referência ou sintoma psicótico | `marcadores_extraidos_sintomas_psicoticos_*` |
+| `uso_problematico_substancias` | uso de álcool ou substâncias com prejuízo | `marcadores_extraidos_uso_problematico_substancias_*` |
+| `internacao_previa` | internação anterior relacionada a sofrimento psíquico | `marcadores_extraidos_internacao_previa_*` |
+| `agravamento_recente` | piora recente de sintomas | `marcadores_extraidos_agravamento_recente_*` |
+| `suporte_social_baixo` | rede de apoio limitada | `marcadores_extraidos_suporte_social_baixo_*` |
+| `comprometimento_funcional` | dificuldade leve, moderada ou importante em atividades | `marcadores_extraidos_comprometimento_funcional_*` |
 
 ## Atributos por marcador
 
@@ -41,10 +41,10 @@ A ontologia operacional está implementada em `src/emulti_pipeline/extraction.py
 
 1. Defina código, semântica, exemplos positivos e negativos.
 2. Acrescente padrões em `MARKER_ONTOLOGY`.
-3. Gere o marcador verdadeiro correspondente `ztrue_<codigo>` no simulador, quando aplicável.
+3. Gere o marcador verdadeiro correspondente `marcadores_origem_<codigo>` no simulador, quando aplicável.
 4. Atualize o gerador de narrativa para expressar o marcador de forma coerente.
 5. Atualize a referência de extração, os conjuntos analíticos e os formulários de anotação.
-6. Atualize a matriz de prioridade se o marcador influenciar `Yref`.
+6. Atualize a matriz de prioridade se o marcador influenciar `prioridade_referencia`.
 7. Atualize contratos, dicionário, ontologia e ADR se a mudança for estrutural.
 
 ## Limite de cobertura

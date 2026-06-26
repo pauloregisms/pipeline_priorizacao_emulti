@@ -90,17 +90,42 @@ O bloco `state_anxiety` inclui `reverse_scored_items`, com índices 1-baseados d
 | `nonurgent_label_noise` | desvio do ruído aplicado apenas às classes não urgentes |
 | `source_note` | justificativa da matriz |
 
-> **Atenção:** a regra-base operacional possui valores codificados no módulo `priority.py`. Antes de mudar esses limiares para estudo definitivo, centralize a fonte de verdade para evitar divergência entre `Yref` e a regra-base.
+> **Atenção:** a regra-base operacional possui valores codificados no módulo `priority.py`. Antes de mudar esses limiares para estudo definitivo, centralize a fonte de verdade para evitar divergência entre `prioridade_referencia` e a regra-base.
 
 ## `narrative`
 
 | Chave | Uso |
 |---|---|
-| `generator_id` | identificador do gerador usado na execução |
+| `provider` | seleciona `template` (local) ou `gemini` (API opcional) |
+| `generator_id` | identificador do simulador template |
 | `prompt_version` | versão lógica do prompt ou contrato textual |
-| `max_retries` | limite de tentativas planejado; o simulador atual não exige retentativas |
+| `max_retries` | tentativas adicionais após a primeira chamada de API |
 | `language` | idioma esperado |
-| `forbidden_input_keys` | lista de chaves que não podem entrar em geração textual |
+| `forbidden_input_keys` | lista adicional de chaves que não podem entrar em geração textual |
+| `gemini` | bloco de configuração do adaptador Gemini |
+
+### `narrative.gemini`
+
+| Chave | Uso |
+|---|---|
+| `generator_id` | identificador estável preservado nos metadados de execução |
+| `model_id` | identificador do modelo Gemini solicitado pelo SDK |
+| `api_key_env` | nome da variável de ambiente com a chave, por padrão `GEMINI_API_KEY` |
+| `temperature` | parâmetro de geração registrado por narrativa |
+| `max_output_tokens` | limite de saída JSON curta |
+| `retry_backoff_seconds` | espera inicial antes de retentativas exponenciais |
+
+O cenário `config/gemini.yaml` usa `extends: "base.yaml"` e altera somente a
+seção narrativa. O loader do projeto mescla dicionários de forma recursiva,
+permitindo criar novos cenários de API sem duplicar parâmetros científicos.
+
+> **Segurança:** nenhuma chave de API pode ser gravada no YAML. Use somente
+> variável de ambiente ou cofre de segredos. O adaptador verifica chaves proibidas
+> em toda a estrutura da requisição antes de montar o prompt.
+
+> **Reprodutibilidade:** `seed` é enviado a cada chamada Gemini, mas o resultado
+> de LLM deve ser considerado reproduzível por melhor esforço. Preserve o YAML,
+> `model_id`, `prompt_hash`, parâmetros e narrativas efetivamente obtidas.
 
 ## `extraction`
 
@@ -116,7 +141,7 @@ O extrator atual possui uma ontologia codificada no módulo `extraction.py`. Ao 
 
 | Chave | Uso |
 |---|---|
-| `n_per_priority` | quantidade máxima por estrato de `Yref` |
+| `n_per_priority` | quantidade máxima por estrato de `prioridade_referencia` |
 | `include_critical_cases` | intenção de inclusão de casos críticos; a seleção atual se baseia na estratificação por prioridade |
 
 ## `modeling`

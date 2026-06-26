@@ -59,7 +59,7 @@ Compare pelo menos:
 - `03_quality_control/quality_summary.json`;
 - `08_extraction_validation/validation_summary.json`;
 - `10_modeling/modeling_summary.csv`;
-- distribuições de `Yref` e dos escores.
+- distribuições de `prioridade_referencia` e dos escores.
 
 ## 6. Cenários em lote
 

@@ -26,23 +26,23 @@ def main() -> None:
     config = load_config(args.config)
     logger = setup_logging("07_create_annotation_sample")
     narratives = _load_jsonl(stage_dir(config, args.run_id, "04_narratives") / "narratives.jsonl")
-    priority = pd.read_csv(stage_dir(config, args.run_id, "05_priority") / "priority_reference.csv")
+    priority = pd.read_csv(stage_dir(config, args.run_id, "05_priority") / "prioridade_referencia.csv")
     profiles = pd.read_csv(stage_dir(config, args.run_id, "01_profiles") / "profiles.csv")
-    merged = narratives.merge(priority[["patient_id", "y_ref"]], on="patient_id", how="inner")
-    merged = merged.merge(profiles[["patient_id", "ztrue_ideacao_suicida", "ztrue_autoagressao_iminente", "ztrue_sintomas_psicoticos"]], on="patient_id", how="inner")
+    merged = narratives.merge(priority[["patient_id", "prioridade_referencia"]], on="patient_id", how="inner")
+    merged = merged.merge(profiles[["patient_id", "marcadores_origem_ideacao_suicida", "marcadores_origem_autoagressao_iminente", "marcadores_origem_sintomas_psicoticos"]], on="patient_id", how="inner")
 
     rng = pd.Series(range(len(merged))).sample(frac=1, random_state=effective_seed(config) + 5000).to_numpy()
     merged = merged.iloc[rng]
     selected = []
     n_per_priority = int(config["annotation"]["n_per_priority"])
     for label in ["baixa", "moderada", "alta", "urgente"]:
-        subset = merged[merged["y_ref"] == label]
+        subset = merged[merged["prioridade_referencia"] == label]
         selected.append(subset.head(min(n_per_priority, len(subset))))
     sample = pd.concat(selected, ignore_index=True).drop_duplicates("patient_id")
 
     # O rótulo de referência não é incluído no formulário entregue aos anotadores.
     # Ele permanece em arquivo de auditoria separado para estratificação e análise posterior.
-    annotation = sample[["patient_id", "full_text"]].copy()
+    annotation = sample[["patient_id", "narrativa_clinica"]].copy()
     marker_columns = [
         "ideacao_suicida", "planejamento_suicida", "autoagressao_iminente", "risco_violencia",
         "sintomas_psicoticos", "uso_problematico_substancias", "internacao_previa",
@@ -60,9 +60,9 @@ def main() -> None:
 
     output = stage_dir(config, args.run_id, "07_annotation")
     save_csv(annotation, output / "annotation_template.csv")
-    save_csv(sample[["patient_id", "y_ref"]], output / "annotation_sampling_audit.csv")
+    save_csv(sample[["patient_id", "prioridade_referencia"]], output / "annotation_sampling_audit.csv")
     write_json(output / "annotation_instructions.json", {
-        "instructions": "Dois anotadores independentes devem preencher o arquivo sem acesso a y_ref. Após a anotação, salvar versões separadas para comparação.",
+        "instructions": "Dois anotadores independentes devem preencher o arquivo sem acesso a prioridade_referencia. Após a anotação, salvar versões separadas para comparação.",
         "fields": ["present", "negated", "temporality", "severity", "certainty", "experiencer"],
         "n_selected": int(len(annotation)),
     })

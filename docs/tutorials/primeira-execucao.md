@@ -82,7 +82,7 @@ A execução completa pode levar mais tempo por causa da validação aninhada, X
 cat artifacts/tutorial_completo/13_report/report.md
 ```
 
-O relatório resume qualidade, distribuição de `Yref`, desempenho de extração e modelagem. Ele não substitui uma análise crítica dos arquivos detalhados.
+O relatório resume qualidade, distribuição de `prioridade_referencia`, desempenho de extração e modelagem. Ele não substitui uma análise crítica dos arquivos detalhados.
 
 ## 7. Limpar artefatos locais, se necessário
 

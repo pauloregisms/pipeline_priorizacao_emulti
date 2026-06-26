@@ -12,24 +12,27 @@ A organização segue quatro tipos de necessidade:
 | Aprender por meio de uma execução guiada | [Tutoriais](tutorials/primeira-execucao.md) |
 | Resolver uma tarefa específica | [Guias práticos](how-to/criar-cenario.md) |
 | Visualizar resultados de classificação | [Tabela ordenada da classificação](how-to/visualizar-classificacao-final.md) |
+| Gerar narrativas por API Gemini | [Usar o provedor Gemini](how-to/usar-provedor-gemini.md) |
 | Consultar contratos, parâmetros, scripts e artefatos | [Referência](reference/configuracao.md) |
 
 ## Conteúdo essencial para novos desenvolvedores
 
 1. [Visão geral](explanation/visao-geral.md) — objetivo, limites e vocabulário do projeto.
-2. [Metodologia e fluxo de dados](explanation/metodologia-e-fluxo.md) — relação entre `X`, `S`, `Z*`, `T`, `Zhat`, `Yref` e `Yhat`.
+2. [Metodologia e fluxo de dados](explanation/metodologia-e-fluxo.md) — relação entre `dados_estruturados`, `indicadores_psicometricos`, `marcadores_origem`, `narrativa_clinica`, `marcadores_extraidos`, `prioridade_referencia` e `prioridade_prevista`.
 3. [Primeira execução local](tutorials/primeira-execucao.md) — instalação e smoke test.
-4. [Contratos de dados](reference/contratos-de-dados.md) — entradas e saídas formais.
-5. [Arquitetura C4](architecture/c4-componentes.md) — componentes e fronteiras.
-6. [ADRs](decisions/README.md) — decisões que não devem ser alteradas sem revisão.
-7. [Tabela ordenada da classificação](how-to/visualizar-classificacao-final.md) — inspeção dos perfis sintéticos classificados.
+4. [Nomenclatura do pipeline](reference/nomenclatura.md) — nomes padronizados das estruturas centrais.
+5. [Contratos de dados](reference/contratos-de-dados.md) — entradas e saídas formais.
+6. [Arquitetura C4](architecture/c4-componentes.md) — componentes e fronteiras.
+7. [ADRs](decisions/README.md) — decisões que não devem ser alteradas sem revisão.
+8. [Tabela ordenada da classificação](how-to/visualizar-classificacao-final.md) — inspeção dos perfis sintéticos classificados.
+9. [Provedor Gemini](how-to/usar-provedor-gemini.md) — integração externa opcional, sem mudar os contratos do pipeline.
 
 ## Regras de leitura obrigatória
 
 Antes de editar o código, tenha clareza sobre estas três restrições:
 
 - **Não há dados reais de pacientes.**
-- **`Yref` não é prioridade clínica real; é uma referência simulada.**
+- **`prioridade_referencia` não é prioridade clínica real; é uma referência simulada.**
 - **O gerador de narrativas não pode receber prioridade, códigos, limiares ou pista equivalente.**
 
 ## Uso no GitHub

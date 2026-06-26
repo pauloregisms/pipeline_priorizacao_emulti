@@ -68,19 +68,19 @@ def _label_priority(value: object) -> str:
 
 def _priority_from_prediction(predictions: pd.DataFrame) -> pd.Series:
     """Obtém a prioridade prevista por rótulo ou, como contingência, por código."""
-    if "predicted_priority" in predictions:
-        return predictions["predicted_priority"].astype(str).str.lower()
-    if "y_pred" in predictions:
-        return predictions["y_pred"].map(lambda code: PRIORITY_ORDER[int(code)])
-    raise ValueError("Previsões sem 'predicted_priority' ou 'y_pred'.")
+    if "prioridade_prevista" in predictions:
+        return predictions["prioridade_prevista"].astype(str).str.lower()
+    if "prioridade_prevista_codigo" in predictions:
+        return predictions["prioridade_prevista_codigo"].map(lambda code: PRIORITY_ORDER[int(code)])
+    raise ValueError("Previsões sem 'prioridade_prevista' ou 'prioridade_prevista_codigo'.")
 
 
 def _reference_from_prediction(predictions: pd.DataFrame) -> pd.Series | None:
     """Obtém a prioridade de referência simulada quando ela existe no arquivo."""
-    if "true_priority" in predictions:
-        return predictions["true_priority"].astype(str).str.lower()
-    if "y_true" in predictions:
-        return predictions["y_true"].map(lambda code: PRIORITY_ORDER[int(code)])
+    if "prioridade_referencia" in predictions:
+        return predictions["prioridade_referencia"].astype(str).str.lower()
+    if "prioridade_referencia_codigo" in predictions:
+        return predictions["prioridade_referencia_codigo"].map(lambda code: PRIORITY_ORDER[int(code)])
     return None
 
 
@@ -88,7 +88,7 @@ def _marker_summary(row: pd.Series) -> str:
     """Resume marcadores extraídos em uma única coluna de inspeção rápida."""
     labels: list[str] = []
     for marker, label in _MARKER_LABELS.items():
-        column = f"zhat_{marker}_present"
+        column = f"marcadores_extraidos_{marker}_present"
         if column in row.index and pd.notna(row[column]) and int(row[column]) == 1:
             labels.append(label)
     return "; ".join(labels) if labels else "Nenhum marcador extraído"
@@ -125,12 +125,12 @@ def build_simplified_classification_table(
     psychometrics:
         Saída ``02_psychometrics/psychometrics.csv`` da execução corrente.
     extracted_markers:
-        Saída ``06_extraction/markers_extracted.csv`` da execução corrente.
+        Saída ``06_extraction/marcadores_extraidos.csv`` da execução corrente.
     predictions:
         Arquivo ``final_test_predictions.csv`` do modelo selecionado. Cada linha
         precisa representar um perfil sintético do conjunto-teste final.
     include_reference:
-        Quando ``True``, exibe ``Yref`` e a concordância com a referência
+        Quando ``True``, exibe ``prioridade_referencia`` e a concordância com a referência
         simulada. Esse campo é adequado apenas à avaliação experimental e deve
         permanecer oculto em uma visualização operacional hipotética.
 
@@ -142,7 +142,7 @@ def build_simplified_classification_table(
     """
     _require_columns(profiles, ["patient_id", "age_years", "gender_category", "social_vulnerability"], "profiles")
     _require_columns(psychometrics, ["patient_id", "phq9_total", "gad7_total", "idate_estado_total"], "psychometrics")
-    _require_columns(extracted_markers, ["patient_id"], "markers_extracted")
+    _require_columns(extracted_markers, ["patient_id"], "marcadores_extraidos")
     _require_columns(predictions, ["patient_id"], "predictions")
 
     # Mantém somente as colunas de leitura rápida. O restante permanece disponível
@@ -151,8 +151,8 @@ def build_simplified_classification_table(
     score_cols = ["patient_id", "phq9_total", "gad7_total", "idate_estado_total"]
     extracted_cols = [
         "patient_id",
-        "zhat_comprometimento_funcional_severity_code",
-        *[f"zhat_{marker}_present" for marker in _MARKER_LABELS],
+        "marcadores_extraidos_comprometimento_funcional_severity_code",
+        *[f"marcadores_extraidos_{marker}_present" for marker in _MARKER_LABELS],
     ]
     available_extracted_cols = [column for column in extracted_cols if column in extracted_markers.columns]
 
@@ -175,7 +175,7 @@ def build_simplified_classification_table(
     probability_urgent = _numeric_series(merged, "proba_3")
 
     functional_raw = _numeric_series(
-        merged, "zhat_comprometimento_funcional_severity_code"
+        merged, "marcadores_extraidos_comprometimento_funcional_severity_code"
     ).astype(int)
 
     table = pd.DataFrame(
@@ -199,7 +199,7 @@ def build_simplified_classification_table(
         reference = _reference_from_prediction(merged)
         if reference is None:
             raise ValueError(
-                "O arquivo de previsões não contém 'true_priority' ou 'y_true'. "
+                "O arquivo de previsões não contém 'prioridade_referencia' ou 'prioridade_referencia_codigo'. "
                 "Não é possível adicionar a referência simulada."
             )
         table.insert(2, "Prioridade de referência simulada", reference.map(_label_priority))

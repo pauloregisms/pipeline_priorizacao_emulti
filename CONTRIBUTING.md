@@ -6,8 +6,8 @@ Obrigado por contribuir com o pipeline sintético de priorização para e-Multi.
 
 1. **Não introduzir dados reais.** O repositório e seus artefatos devem permanecer inteiramente sintéticos.
 2. **Não ocultar decisões metodológicas.** Mudanças em regras, parâmetros, modelos, métricas ou contratos precisam ser rastreáveis.
-3. **Não criar vazamento de rótulo.** `Yref`, códigos de prioridade, limiares de decisão ou campos equivalentes não podem chegar à geração textual nem a etapas que os usem como pistas indevidas.
-4. **Preservar a separação entre `Z*` e `Zhat`.** Marcadores verdadeiros do gerador e marcadores extraídos do texto não são intercambiáveis.
+3. **Não criar vazamento de rótulo.** `prioridade_referencia`, códigos de prioridade, limiares de decisão ou campos equivalentes não podem chegar à geração textual nem a etapas que os usem como pistas indevidas.
+4. **Preservar a separação entre `marcadores_origem` e `marcadores_extraidos`.** Marcadores verdadeiros do gerador e marcadores extraídos do texto não são intercambiáveis.
 5. **Atualizar a documentação no mesmo pull request.** Código e documentação devem evoluir juntos.
 
 ## Antes de começar
@@ -55,7 +55,7 @@ Crie um novo documento em `docs/decisions/` quando a alteração for difícil de
 
 - troca do gerador probabilístico por outro mecanismo;
 - inclusão de um provedor de LLM;
-- mudança na semântica ou nas classes de `Yref`;
+- mudança na semântica ou nas classes de `prioridade_referencia`;
 - alteração no conjunto de modelos comparados;
 - mudança em como são preservados os artefatos;
 - alteração de política para dados, credenciais ou publicação de resultados.
@@ -73,7 +73,7 @@ Use o modelo presente em `docs/decisions/ADR-TEMPLATE.md`.
 
 ## Mudanças na geração de narrativas
 
-Toda integração de LLM deve obedecer à [política de integração](docs/how-to/adicionar-provedor-llm.md):
+O adaptador Gemini já implementado deve obedecer ao [guia de uso](docs/how-to/usar-provedor-gemini.md). Toda nova integração de LLM deve obedecer à [política de integração](docs/how-to/adicionar-provedor-llm.md):
 
 - implementar `BaseNarrativeGenerator`;
 - aceitar apenas `NarrativeRequest`;

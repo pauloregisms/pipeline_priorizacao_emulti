@@ -2,7 +2,7 @@
 
 ## Finalidade
 
-A matriz gera `Yref`, o alvo de referência para comparar regra-base e classificadores. Ela representa uma hipótese programada de priorização em um cenário sintético. Não representa necessidade clínica real nem deve orientar conduta.
+A matriz gera `prioridade_referencia`, o alvo de referência para comparar regra-base e classificadores. Ela representa uma hipótese programada de priorização em um cenário sintético. Não representa necessidade clínica real nem deve orientar conduta.
 
 ## Classes ordinais
 
@@ -52,7 +52,7 @@ O cenário atual agrega:
 
 ## Fonte de verdade e dívida técnica
 
-A referência `Yref` lê valores do YAML. Já a regra-base operacional possui limiares codificados em `priority.py`. Esse acoplamento deve ser eliminado antes de qualquer calibração final.
+A referência `prioridade_referencia` lê valores do YAML. Já a regra-base operacional possui limiares codificados em `priority.py`. Esse acoplamento deve ser eliminado antes de qualquer calibração final.
 
 ### Refatoração recomendada
 

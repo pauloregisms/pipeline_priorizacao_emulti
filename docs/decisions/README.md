@@ -10,7 +10,8 @@ ADRs registram decisões de arquitetura e metodologia que têm impacto duradouro
 | [ADR-002](ADR-002-narrativas-desacopladas.md) | desacoplar geração de narrativas de fornecedores de LLM |
 | [ADR-003](ADR-003-prioridade-simulada-ordinal.md) | usar prioridade simulada ordinal de quatro classes |
 | [ADR-004](ADR-004-validacao-aninhada.md) | adotar validação aninhada e teste final isolado |
-| [ADR-005](ADR-005-separacao-ztrue-zhat.md) | preservar a distinção entre `Z*` e `Zhat` |
+| [ADR-005](ADR-005-separacao-marcadores-origem-extraidos.md) | preservar a distinção entre `marcadores_origem` e `marcadores_extraidos` |
+| [ADR-006](ADR-006-provedor-gemini.md) | adotar adaptador opcional da Gemini API, preservando o modo template |
 
 ## Quando criar novo ADR
 

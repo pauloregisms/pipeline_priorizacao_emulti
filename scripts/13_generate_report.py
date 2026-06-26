@@ -51,7 +51,7 @@ def main() -> None:
         f"- Distribuição: {priority.get('class_distribution', 'não disponível')}",
         "",
         "## Extração",
-        f"- F1 médio contra os marcadores verdadeiros do gerador: {extraction.get('synthetic_reference_mean_f1', 'não disponível')}",
+        f"- F1 médio contra os marcadores de origem do gerador: {extraction.get('synthetic_reference_mean_f1', 'não disponível')}",
         "- A validação com anotadores humanos deve ser reportada separadamente quando os arquivos de dupla anotação estiverem disponíveis.",
         "",
         "## Modelagem",

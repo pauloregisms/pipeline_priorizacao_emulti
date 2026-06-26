@@ -1,6 +1,6 @@
 # Como alterar a matriz de prioridade simulada
 
-A matriz de prioridade define `Yref`, o alvo de referência da simulação. Alterá-la muda a pergunta computacional do experimento e exige cautela metodológica.
+A matriz de prioridade define `prioridade_referencia`, o alvo de referência da simulação. Alterá-la muda a pergunta computacional do experimento e exige cautela metodológica.
 
 ## Antes de editar
 
@@ -37,6 +37,6 @@ Essa refatoração deve ser acompanhada por teste que confirme que mudanças no 
 
 ## Não faça
 
-- Não envie `Yref`, nomes de prioridade ou códigos ao gerador textual.
-- Não substitua `Yref` por uma afirmação de necessidade clínica real.
+- Não envie `prioridade_referencia`, nomes de prioridade ou códigos ao gerador textual.
+- Não substitua `prioridade_referencia` por uma afirmação de necessidade clínica real.
 - Não ajuste limiares após observar o desempenho de classificadores sem registrar a decisão como nova hipótese experimental.

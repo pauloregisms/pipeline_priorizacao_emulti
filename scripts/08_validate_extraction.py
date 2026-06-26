@@ -1,4 +1,4 @@
-"""Etapa 8: avalia Z-hat contra Z* e aceita anotações humanas futuras."""
+"""Etapa 8: avalia marcadores_extraidos contra marcadores_origem e aceita anotações humanas futuras."""
 
 from __future__ import annotations
 
@@ -33,21 +33,21 @@ def _cohen_kappa_binary(left: np.ndarray, right: np.ndarray) -> float:
 
 
 def main() -> None:
-    parser = common_parser("Valida a extração contra Z* e anotações humanas quando disponíveis.")
+    parser = common_parser("Valida a extração contra marcadores_origem e anotações humanas quando disponíveis.")
     parser.add_argument("--annotator-a", default=None, help="CSV opcional preenchido pelo anotador A.")
     parser.add_argument("--annotator-b", default=None, help="CSV opcional preenchido pelo anotador B.")
     args = parser.parse_args()
     config = load_config(args.config)
     logger = setup_logging("08_validate_extraction")
     profiles = pd.read_csv(stage_dir(config, args.run_id, "01_profiles") / "profiles.csv")
-    extracted = pd.read_csv(stage_dir(config, args.run_id, "06_extraction") / "markers_extracted.csv")
+    extracted = pd.read_csv(stage_dir(config, args.run_id, "06_extraction") / "marcadores_extraidos.csv")
     reference = extraction_reference_table(profiles)
     merged = reference.merge(extracted, on="patient_id", how="inner", validate="one_to_one")
 
     metrics = []
     for marker in MARKER_ONTOLOGY:
-        true_col = f"ztrue_{marker}_present"
-        pred_col = f"zhat_{marker}_present"
+        true_col = f"marcadores_origem_{marker}_present"
+        pred_col = f"marcadores_extraidos_{marker}_present"
         metrics.append(_metric_row(marker, merged[true_col].to_numpy(), merged[pred_col].to_numpy()))
     metrics_frame = pd.DataFrame(metrics)
 
@@ -74,9 +74,9 @@ def main() -> None:
         "synthetic_reference_mean_f1": float(metrics_frame["f1"].mean()),
         "synthetic_reference_mean_recall": float(metrics_frame["recall"].mean()),
         "human_annotation": annotation_summary,
-        "interpretation": "Z* é referência do gerador; anotação humana independente deve complementar esta avaliação.",
+        "interpretation": "marcadores_origem é referência do gerador; anotação humana independente deve complementar esta avaliação.",
     })
-    logger.info("Validação da extração concluída. F1 médio contra Z*: %.3f", metrics_frame["f1"].mean())
+    logger.info("Validação da extração concluída. F1 médio contra marcadores_origem: %.3f", metrics_frame["f1"].mean())
 
 
 if __name__ == "__main__":

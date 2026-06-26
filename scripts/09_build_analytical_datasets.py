@@ -11,14 +11,14 @@ from emulti_pipeline.utils import save_csv, setup_logging, stage_dir, write_json
 
 
 def main() -> None:
-    parser = common_parser("Prepara conjuntos X+S, X+S+Z* e X+S+Z-hat.")
+    parser = common_parser("Prepara conjuntos dados_estruturados + indicadores_psicometricos, dados_estruturados + indicadores_psicometricos + marcadores_origem e dados_estruturados + indicadores_psicometricos + marcadores_extraidos.")
     args = parser.parse_args()
     config = load_config(args.config)
     logger = setup_logging("09_build_analytical_datasets")
     profiles = pd.read_csv(stage_dir(config, args.run_id, "01_profiles") / "profiles.csv")
     psychometrics = pd.read_csv(stage_dir(config, args.run_id, "02_psychometrics") / "psychometrics.csv")
-    priority = pd.read_csv(stage_dir(config, args.run_id, "05_priority") / "priority_reference.csv")
-    extracted = pd.read_csv(stage_dir(config, args.run_id, "06_extraction") / "markers_extracted.csv")
+    priority = pd.read_csv(stage_dir(config, args.run_id, "05_priority") / "prioridade_referencia.csv")
+    extracted = pd.read_csv(stage_dir(config, args.run_id, "06_extraction") / "marcadores_extraidos.csv")
 
     datasets = build_analytical_sets(profiles, psychometrics, priority, extracted, config)
     output = stage_dir(config, args.run_id, "09_analytical_sets")

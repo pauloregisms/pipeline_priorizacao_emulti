@@ -6,7 +6,18 @@ O formato segue a convenção **Keep a Changelog** de forma simplificada. Versõ
 
 ## [Não lançado]
 
+### Alterado
+
+- **Mudança incompatível de nomenclatura:** as colunas, contratos, conjuntos analíticos, previsões e documentação passaram a usar `marcadores_origem`, `marcadores_extraidos`, `prioridade_referencia` e `prioridade_prevista`. Execuções anteriores devem ser regeneradas; artefatos produzidos antes desta mudança não são compatíveis com os scripts atuais.
+- O contrato de geração de narrativa passou a expor `dados_estruturados`, `indicadores_psicometricos`, `marcadores_origem` e `narrativa_clinica`.
+
 ### Adicionado
+
+- Adaptador opcional `GeminiNarrativeGenerator`, baseado no SDK `google-genai`, para geração de narrativas SOAP sintéticas em JSON estruturado.
+- Configurações herdáveis `config/gemini.yaml` e `config/gemini_smoke.yaml`, sem duplicação dos parâmetros científicos do cenário-base.
+- Fábrica `create_narrative_generator()` para seleção explícita entre `template` e `gemini`.
+- Validação recursiva de chaves proibidas na entrada de provedores de narrativa.
+- Guia de uso local e no Google Colab para Gemini, referência técnica do provedor e ADR-006.
 
 - Estrutura de documentação Docs-as-Code em `docs/`.
 - Organização por Diátaxis: explicações, tutoriais, guias práticos e referências.
@@ -27,6 +38,6 @@ O formato segue a convenção **Keep a Changelog** de forma simplificada. Versõ
 - Gerador de narrativas SOAP simuladas e desacopladas de APIs de LLM.
 - Regra de prioridade de referência simulada em quatro categorias.
 - Extrator de marcadores baseado em dicionário e regras de negação.
-- Conjuntos analíticos `X+S`, `X+S+Z*` e `X+S+Zhat`.
+- Conjuntos analíticos `dados_estruturados + indicadores_psicometricos`, `dados_estruturados + indicadores_psicometricos + marcadores_origem` e `dados_estruturados + indicadores_psicometricos + marcadores_extraidos`.
 - Modelagem com regra-base, regressão logística ordinal, Random Forest e XGBoost.
 - Métricas de classificação, calibração, robustez e explicabilidade.

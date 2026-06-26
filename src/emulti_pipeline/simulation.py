@@ -64,9 +64,9 @@ def _bernoulli_from_logit(
 
 
 def generate_profiles(config: dict[str, Any], seed: int) -> SimulationResult:
-    """Gera atributos estruturados, gravidade latente e marcadores verdadeiros.
+    """Gera atributos estruturados, gravidade latente e marcadores de origem.
 
-    A gravidade latente ``u_latent`` é preservada apenas para auditoria do gerador.
+    A gravidade latente ``gravidade_latente_auditoria`` é preservada apenas para auditoria do gerador.
     Ela não será incluída nos conjuntos analíticos destinados aos classificadores.
     """
     simulation = config["simulation"]
@@ -115,37 +115,37 @@ def generate_profiles(config: dict[str, Any], seed: int) -> SimulationResult:
     )
     vulnerability = np.clip(vulnerability, 0, 1)
 
-    # U é um construto latente do gerador. O termo aleatório evita relação
+    # A gravidade latente é um construto latente do gerador. O termo aleatório evita relação
     # perfeitamente determinística entre vulnerabilidade e sofrimento psíquico.
-    u_latent = np.clip(rng.normal(0, 1, n_records) + 0.75 * (vulnerability - vulnerability.mean()), -3.5, 3.5)
+    gravidade_latente = np.clip(rng.normal(0, 1, n_records) + 0.75 * (vulnerability - vulnerability.mean()), -3.5, 3.5)
 
-    # Condições clínicas e utilização de serviços, todas condicionais a X, V e U.
-    mental_health_history = _bernoulli_from_logit(rng, -0.45 + 0.50 * vulnerability + 0.85 * u_latent)
+    # Condições clínicas e utilização de serviços, todas condicionais aos dados estruturados, à vulnerabilidade social e à gravidade latente.
+    mental_health_history = _bernoulli_from_logit(rng, -0.45 + 0.50 * vulnerability + 0.85 * gravidade_latente)
     chronic_condition = _bernoulli_from_logit(rng, -0.40 + 0.42 * (age > 50).astype(int) + 0.18 * vulnerability)
-    recent_service_contact = _bernoulli_from_logit(rng, -0.20 + 0.40 * mental_health_history + 0.50 * u_latent)
-    previous_admission = _bernoulli_from_logit(rng, -2.55 + 0.85 * mental_health_history + 0.60 * u_latent)
-    substance_use = _bernoulli_from_logit(rng, -2.05 + 0.35 * vulnerability + 0.55 * u_latent)
+    recent_service_contact = _bernoulli_from_logit(rng, -0.20 + 0.40 * mental_health_history + 0.50 * gravidade_latente)
+    previous_admission = _bernoulli_from_logit(rng, -2.55 + 0.85 * mental_health_history + 0.60 * gravidade_latente)
+    substance_use = _bernoulli_from_logit(rng, -2.05 + 0.35 * vulnerability + 0.55 * gravidade_latente)
 
-    # Marcadores clínicos verdadeiros Z*. A lógica de dependência cria combinações
+    # Marcadores clínicos de origem marcadores_origem. A lógica de dependência cria combinações
     # plausíveis; por exemplo, planejamento é gerado apenas se existe ideação atual.
-    suicidal_ideation = _bernoulli_from_logit(rng, -3.65 + 1.55 * u_latent + 0.25 * vulnerability)
+    suicidal_ideation = _bernoulli_from_logit(rng, -3.65 + 1.55 * gravidade_latente + 0.25 * vulnerability)
     suicide_planning = np.where(
         suicidal_ideation == 1,
-        _bernoulli_from_logit(rng, -1.65 + 0.85 * u_latent),
+        _bernoulli_from_logit(rng, -1.65 + 0.85 * gravidade_latente),
         0,
     )
     imminent_self_harm = np.where(
         suicide_planning == 1,
-        _bernoulli_from_logit(rng, -2.10 + 0.90 * u_latent),
+        _bernoulli_from_logit(rng, -2.10 + 0.90 * gravidade_latente),
         0,
     )
-    violence_risk = _bernoulli_from_logit(rng, -4.30 + 1.15 * u_latent + 0.30 * substance_use)
-    psychotic_symptoms = _bernoulli_from_logit(rng, -4.10 + 1.30 * u_latent)
-    recent_worsening = _bernoulli_from_logit(rng, -1.55 + 0.90 * u_latent + 0.20 * vulnerability)
+    violence_risk = _bernoulli_from_logit(rng, -4.30 + 1.15 * gravidade_latente + 0.30 * substance_use)
+    psychotic_symptoms = _bernoulli_from_logit(rng, -4.10 + 1.30 * gravidade_latente)
+    recent_worsening = _bernoulli_from_logit(rng, -1.55 + 0.90 * gravidade_latente + 0.20 * vulnerability)
     low_social_support = _bernoulli_from_logit(rng, -0.75 + 1.00 * vulnerability)
 
     # Comprometimento funcional é ordinal: 0=ausente, 1=leve, 2=moderado, 3=importante.
-    functional_signal = 0.85 * u_latent + 0.35 * vulnerability + rng.normal(0, 0.70, n_records)
+    functional_signal = 0.85 * gravidade_latente + 0.35 * vulnerability + rng.normal(0, 0.70, n_records)
     functional_impairment = np.digitize(functional_signal, bins=[-0.65, 0.25, 1.15], right=False).astype(int)
 
     profiles = pd.DataFrame(
@@ -160,20 +160,20 @@ def generate_profiles(config: dict[str, Any], seed: int) -> SimulationResult:
             "food_insecurity": food_insecurity,
             "poor_housing": poor_housing,
             "social_vulnerability": np.round(vulnerability, 6),
-            "u_latent_audit_only": np.round(u_latent, 6),
+            "gravidade_latente_auditoria": np.round(gravidade_latente, 6),
             "mental_health_history": mental_health_history,
             "chronic_condition": chronic_condition,
             "recent_service_contact": recent_service_contact,
-            "ztrue_internacao_previa": previous_admission,
-            "ztrue_uso_problematico_substancias": substance_use,
-            "ztrue_ideacao_suicida": suicidal_ideation,
-            "ztrue_planejamento_suicida": suicide_planning,
-            "ztrue_autoagressao_iminente": imminent_self_harm,
-            "ztrue_risco_violencia": violence_risk,
-            "ztrue_sintomas_psicoticos": psychotic_symptoms,
-            "ztrue_agravamento_recente": recent_worsening,
-            "ztrue_suporte_social_baixo": low_social_support,
-            "ztrue_comprometimento_funcional": functional_impairment,
+            "marcadores_origem_internacao_previa": previous_admission,
+            "marcadores_origem_uso_problematico_substancias": substance_use,
+            "marcadores_origem_ideacao_suicida": suicidal_ideation,
+            "marcadores_origem_planejamento_suicida": suicide_planning,
+            "marcadores_origem_autoagressao_iminente": imminent_self_harm,
+            "marcadores_origem_risco_violencia": violence_risk,
+            "marcadores_origem_sintomas_psicoticos": psychotic_symptoms,
+            "marcadores_origem_agravamento_recente": recent_worsening,
+            "marcadores_origem_suporte_social_baixo": low_social_support,
+            "marcadores_origem_comprometimento_funcional": functional_impairment,
         }
     )
 
@@ -182,7 +182,7 @@ def generate_profiles(config: dict[str, Any], seed: int) -> SimulationResult:
         "seed": seed,
         "n_records": n_records,
         "marker_semantics": {
-            "ztrue_comprometimento_funcional": {
+            "marcadores_origem_comprometimento_funcional": {
                 "0": "ausente",
                 "1": "leve",
                 "2": "moderado",
@@ -244,13 +244,13 @@ def simulate_psychometrics(
     rng = np.random.default_rng(seed + 1000)
     settings = config["psychometrics"]
     n = len(profiles)
-    u = profiles["u_latent_audit_only"].to_numpy(dtype=float)
+    u = profiles["gravidade_latente_auditoria"].to_numpy(dtype=float)
     v = profiles["social_vulnerability"].to_numpy(dtype=float)
     service = profiles["recent_service_contact"].to_numpy(dtype=float)
     marker_effect = (
-        0.55 * profiles["ztrue_agravamento_recente"].to_numpy(dtype=float)
-        + 0.60 * profiles["ztrue_uso_problematico_substancias"].to_numpy(dtype=float)
-        + 0.45 * (profiles["ztrue_comprometimento_funcional"].to_numpy(dtype=float) >= 2)
+        0.55 * profiles["marcadores_origem_agravamento_recente"].to_numpy(dtype=float)
+        + 0.60 * profiles["marcadores_origem_uso_problematico_substancias"].to_numpy(dtype=float)
+        + 0.45 * (profiles["marcadores_origem_comprometimento_funcional"].to_numpy(dtype=float) >= 2)
     )
 
     # O sinal latente é compartilhado parcialmente entre as escalas para criar

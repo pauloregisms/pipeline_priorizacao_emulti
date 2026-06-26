@@ -12,8 +12,8 @@ O pipeline avalia cinco propriedades:
 
 1. **Plausibilidade:** faixas, distribuições, associações esperadas e regras de consistência da base sintética.
 2. **Rastreabilidade:** identificação de sementes, parâmetros, versões de prompt e artefatos de cada execução.
-3. **Preservação de informação:** diferença entre marcadores verdadeiros do gerador `Z*` e marcadores recuperados do texto `Zhat`.
-4. **Recuperação de uma regra simulada:** concordância de modelos com `Yref`.
+3. **Preservação de informação:** diferença entre marcadores de origem definidos pelo gerador `marcadores_origem` e marcadores recuperados do texto `marcadores_extraidos`.
+4. **Recuperação de uma regra simulada:** concordância de modelos com `prioridade_referencia`.
 5. **Robustez:** mudança de resultados entre sementes, dados faltantes, ruído na extração e cenários configurados.
 
 ## O que não é avaliado
@@ -32,15 +32,15 @@ Este projeto não demonstra:
 
 | Símbolo / termo | Significado | Pode entrar no classificador? |
 |---|---|---|
-| `X` | atributos estruturados disponíveis no cenário conceitual de encaminhamento | Sim |
-| `V` | índice sintético de vulnerabilidade social derivado de componentes de `X` | Sim, por meio de `social_vulnerability` |
-| `U` | gravidade latente interna ao gerador | Não |
-| `S` | itens e totais psicométricos simulados | Sim; cenário-base usa totais |
-| `Z*` | marcadores clínicos verdadeiros gerados no cenário | Somente no conjunto de limite superior |
-| `T` | narrativa SOAP sintética | Não diretamente; origina `Zhat` |
-| `Zhat` | marcadores extraídos de `T` | Sim, no conjunto operacional |
-| `Yref` | prioridade de referência simulada | É o alvo; não entra como preditor |
-| `Yhat` | previsão produzida por regra ou modelo | Resultado da modelagem |
+| `dados_estruturados` | atributos estruturados disponíveis no cenário conceitual de encaminhamento | Sim |
+| `vulnerabilidade_social` | índice sintético de vulnerabilidade social derivado de componentes de `dados_estruturados` | Sim, por meio de `social_vulnerability` |
+| `gravidade_latente_auditoria` | gravidade latente interna ao gerador | Não |
+| `indicadores_psicometricos` | itens e totais psicométricos simulados | Sim; cenário-base usa totais |
+| `marcadores_origem` | marcadores clínicos definidos pelo gerador para compor o cenário | Somente no conjunto de limite superior |
+| `narrativa_clinica` | narrativa SOAP sintética | Não diretamente; origina `marcadores_extraidos` |
+| `marcadores_extraidos` | marcadores extraídos de `narrativa_clinica` | Sim, no conjunto operacional |
+| `prioridade_referencia` | prioridade de referência simulada | É o alvo; não entra como preditor |
+| `prioridade_prevista` | previsão produzida por regra ou modelo | Resultado da modelagem |
 
 ## Fronteiras éticas e técnicas
 

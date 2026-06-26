@@ -2,7 +2,7 @@
 
 A modelagem compara uma regra-base observável, regressão logística ordinal, Random
 Forest e XGBoost. A prioridade de referência é um rótulo simulado; as métricas devem
-ser interpretadas como recuperação de Yref, não como validação clínica.
+ser interpretadas como recuperação de prioridade_referencia, não como validação clínica.
 """
 
 from __future__ import annotations
@@ -50,15 +50,15 @@ def _align_probabilities(estimator: Any, raw_probabilities: np.ndarray, n_classe
     return aligned / aligned.sum(axis=1, keepdims=True)
 
 
-def _save_evaluation(output: Path, prefix: str, y_true: np.ndarray, y_pred: np.ndarray, probability: np.ndarray, bootstrap_reps: int, seed: int) -> dict[str, float]:
-    metrics, per_class, matrix = calculate_classification_metrics(y_true, y_pred, probability)
+def _save_evaluation(output: Path, prefix: str, prioridade_referencia_codigo: np.ndarray, prioridade_prevista_codigo: np.ndarray, probability: np.ndarray, bootstrap_reps: int, seed: int) -> dict[str, float]:
+    metrics, per_class, matrix = calculate_classification_metrics(prioridade_referencia_codigo, prioridade_prevista_codigo, probability)
     save_csv(pd.DataFrame([metrics]), output / f"{prefix}_metrics.csv")
     save_csv(per_class, output / f"{prefix}_per_class.csv")
     matrix.to_csv(output / f"{prefix}_confusion_matrix.csv", encoding="utf-8")
     intervals = bootstrap_metric_intervals(
         pd.DataFrame({
-            "y_true": y_true,
-            "y_pred": y_pred,
+            "prioridade_referencia_codigo": prioridade_referencia_codigo,
+            "prioridade_prevista_codigo": prioridade_prevista_codigo,
             **{f"proba_{index}": probability[:, index] for index in range(4)},
         }),
         bootstrap_reps,
@@ -92,10 +92,10 @@ def _run_rule_baseline(
     predictions = pd.DataFrame({
         "patient_id": patient_ids_test.to_numpy(),
         "set": "final_test",
-        "y_true": y_test,
-        "y_pred": test_pred,
-        "true_priority": [PRIORITY_ORDER[index] for index in y_test],
-        "predicted_priority": [PRIORITY_ORDER[index] for index in test_pred],
+        "prioridade_referencia_codigo": y_test,
+        "prioridade_prevista_codigo": test_pred,
+        "prioridade_referencia": [PRIORITY_ORDER[index] for index in y_test],
+        "prioridade_prevista": [PRIORITY_ORDER[index] for index in test_pred],
         **{f"proba_{index}": test_proba[:, index] for index in range(4)},
     })
     save_csv(predictions, dev_output / "final_test_predictions.csv")
@@ -144,8 +144,8 @@ def _run_trainable_model(
         chosen_params.append({"outer_fold": fold_index, **search.best_params_})
         outer_rows.append(pd.DataFrame({
             "outer_fold": fold_index,
-            "y_true": y_valid,
-            "y_pred": pred,
+            "prioridade_referencia_codigo": y_valid,
+            "prioridade_prevista_codigo": pred,
             **{f"proba_{index}": proba[:, index] for index in range(4)},
         }))
 
@@ -154,8 +154,8 @@ def _run_trainable_model(
     outer_metrics = _save_evaluation(
         model_output,
         "nested_outer",
-        outer_predictions["y_true"].to_numpy(),
-        outer_predictions["y_pred"].to_numpy(),
+        outer_predictions["prioridade_referencia_codigo"].to_numpy(),
+        outer_predictions["prioridade_prevista_codigo"].to_numpy(),
         outer_predictions[[f"proba_{index}" for index in range(4)]].to_numpy(),
         int(model_cfg["bootstrap_repetitions"]),
         int(model_cfg["random_state"]) + 10,
@@ -190,10 +190,10 @@ def _run_trainable_model(
     )
     test_predictions = pd.DataFrame({
         "patient_id": patient_ids_test.to_numpy(),
-        "y_true": y_test,
-        "y_pred": test_pred,
-        "true_priority": [PRIORITY_ORDER[index] for index in y_test],
-        "predicted_priority": [PRIORITY_ORDER[index] for index in test_pred],
+        "prioridade_referencia_codigo": y_test,
+        "prioridade_prevista_codigo": test_pred,
+        "prioridade_referencia": [PRIORITY_ORDER[index] for index in y_test],
+        "prioridade_prevista": [PRIORITY_ORDER[index] for index in test_pred],
         **{f"proba_{index}": test_proba[:, index] for index in range(4)},
     })
     save_csv(test_predictions, model_output / "final_test_predictions.csv")
@@ -229,12 +229,12 @@ def main() -> None:
     for path in selected:
         dataset_name = path.stem
         frame = pd.read_csv(path)
-        y = frame["y_ref_code"].to_numpy(dtype=int)
+        y = frame["prioridade_referencia_codigo"].to_numpy(dtype=int)
         if not _class_counts_ok(pd.Series(y), max(int(model_cfg["outer_splits"]), int(model_cfg["inner_splits"]))):
             counts = pd.Series(y).value_counts().to_dict()
             raise ValueError(f"Classes insuficientes para CV em {dataset_name}: {counts}. Aumente n_records ou ajuste parâmetros.")
 
-        target_columns = ["patient_id", "y_ref", "y_ref_code", "urgent_rule_triggered"]
+        target_columns = ["patient_id", "prioridade_referencia", "prioridade_referencia_codigo", "urgent_rule_triggered"]
         X = frame.drop(columns=target_columns)
         patient_ids = frame["patient_id"]
         X_dev, X_test, y_dev, y_test, _, patient_ids_test = train_test_split(

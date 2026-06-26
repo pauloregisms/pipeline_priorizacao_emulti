@@ -79,12 +79,22 @@ priority_rules:
   source_note: "Substituir por matriz de prioridade validada por especialistas."
 
 narrative:
+  # "template" mantém a execução local. Use config/gemini.yaml para ativar a API.
+  provider: "template"
   generator_id: "template-simulator-v1"
-  prompt_version: "simulated_prompt_v1"
+  prompt_version: "narrativa_soap_v1"
   max_retries: 0
   language: "pt-BR"
   # Não incluir prioridade/rótulo em prompts ou em objetos enviados ao gerador.
-  forbidden_input_keys: ["y_ref", "priority", "prioridade", "priority_code"]
+  forbidden_input_keys: ["prioridade_referencia", "prioridade_referencia_codigo", "prioridade_prevista", "prioridade_prevista_codigo", "priority", "prioridade", "priority_code", "priority_label", "label", "target", "Yref", "Yhat"]
+  # Mantido aqui para documentar a estrutura do provedor. config/gemini.yaml faz o override executável.
+  gemini:
+    generator_id: "gemini-api-gemini-3.1-flash-lite"
+    model_id: "gemini-3.1-flash-lite"
+    api_key_env: "GEMINI_API_KEY"
+    temperature: 1.0
+    max_output_tokens: 500
+    retry_backoff_seconds: 2.0
 
 extraction:
   extractor_id: "rule-dictionary-negation-v1"

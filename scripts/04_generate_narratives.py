@@ -1,4 +1,4 @@
-"""Etapa 4: gera narrativas SOAP simuladas por interface desacoplada de LLM."""
+"""Etapa 4: gera narrativas SOAP por provedor configurável e desacoplado."""
 
 from __future__ import annotations
 
@@ -9,45 +9,46 @@ import pandas as pd
 
 from _bootstrap import common_parser
 from emulti_pipeline.config import load_config
-from emulti_pipeline.narratives import NarrativeRequest, TemplateNarrativeGenerator
+from emulti_pipeline.narratives import NarrativeRequest, create_narrative_generator
 from emulti_pipeline.utils import effective_seed, setup_logging, stage_dir, write_json
 
 
 def _record_to_request(profile: pd.Series, scales: pd.Series, prompt_version: str) -> NarrativeRequest:
-    """Monta a entrada permitida pelo gerador textual.
+    """Monta a entrada explicitamente permitida para o gerador textual.
 
-    O código seleciona explicitamente apenas X, S e Z*. Não importa arquivos de
-    prioridade e não aceita ``y_ref`` como campo de entrada.
+    A função seleciona somente dados estruturados, indicadores psicométricos e
+    marcadores de origem. Ela não importa arquivos da etapa de prioridade e não aceita
+    ``prioridade_referencia`` como campo de entrada.
     """
     structured_columns = [
         "age_years", "gender_category", "education", "income_brl", "food_insecurity",
         "poor_housing", "social_vulnerability", "mental_health_history", "chronic_condition",
         "recent_service_contact",
     ]
-    structured_profile = {column: profile[column] for column in structured_columns}
-    psychometric_summary = {
+    dados_estruturados = {column: profile[column] for column in structured_columns}
+    indicadores_psicometricos = {
         "phq9_total": int(scales["phq9_total"]),
         "gad7_total": int(scales["gad7_total"]),
         "idate_estado_total": int(scales["idate_estado_total"]),
     }
-    true_markers = {
-        "ideacao_suicida": int(profile["ztrue_ideacao_suicida"]),
-        "planejamento_suicida": int(profile["ztrue_planejamento_suicida"]),
-        "autoagressao_iminente": int(profile["ztrue_autoagressao_iminente"]),
-        "risco_violencia": int(profile["ztrue_risco_violencia"]),
-        "sintomas_psicoticos": int(profile["ztrue_sintomas_psicoticos"]),
-        "uso_problematico_substancias": int(profile["ztrue_uso_problematico_substancias"]),
-        "internacao_previa": int(profile["ztrue_internacao_previa"]),
-        "agravamento_recente": int(profile["ztrue_agravamento_recente"]),
-        "suporte_social_baixo": int(profile["ztrue_suporte_social_baixo"]),
-        "comprometimento_funcional": int(profile["ztrue_comprometimento_funcional"]),
+    marcadores_origem = {
+        "ideacao_suicida": int(profile["marcadores_origem_ideacao_suicida"]),
+        "planejamento_suicida": int(profile["marcadores_origem_planejamento_suicida"]),
+        "autoagressao_iminente": int(profile["marcadores_origem_autoagressao_iminente"]),
+        "risco_violencia": int(profile["marcadores_origem_risco_violencia"]),
+        "sintomas_psicoticos": int(profile["marcadores_origem_sintomas_psicoticos"]),
+        "uso_problematico_substancias": int(profile["marcadores_origem_uso_problematico_substancias"]),
+        "internacao_previa": int(profile["marcadores_origem_internacao_previa"]),
+        "agravamento_recente": int(profile["marcadores_origem_agravamento_recente"]),
+        "suporte_social_baixo": int(profile["marcadores_origem_suporte_social_baixo"]),
+        "comprometimento_funcional": int(profile["marcadores_origem_comprometimento_funcional"]),
     }
     return NarrativeRequest(
         patient_id=str(profile["patient_id"]),
         seed=int(profile["seed"]) + 2000,
-        structured_profile=structured_profile,
-        psychometrics=psychometric_summary,
-        true_markers=true_markers,
+        dados_estruturados=dados_estruturados,
+        indicadores_psicometricos=indicadores_psicometricos,
+        marcadores_origem=marcadores_origem,
         prompt_version=prompt_version,
     )
 
@@ -61,12 +62,12 @@ def main() -> None:
     psychometrics = pd.read_csv(stage_dir(config, args.run_id, "02_psychometrics") / "psychometrics.csv")
     merged = profiles.merge(psychometrics, on="patient_id", how="inner", validate="one_to_one")
 
-    # Invariante explícita: esta etapa deve ocorrer antes da criação de y_ref e não pode
-    # receber nenhuma coluna que represente prioridade.
-    if any("priority" in column.lower() or "y_ref" in column.lower() for column in merged.columns):
+    # Invariante explícita: esta etapa ocorre antes da criação de prioridade_referencia
+    # e não pode receber nenhuma coluna que represente prioridade.
+    if any("priority" in column.lower() or "prioridade" in column.lower() for column in merged.columns):
         raise ValueError("Foram detectadas colunas de prioridade na entrada da geração textual.")
 
-    generator = TemplateNarrativeGenerator(config["narrative"]["generator_id"])
+    generator = create_narrative_generator(config["narrative"])
     output = stage_dir(config, args.run_id, "04_narratives")
     output_file = output / "narratives.jsonl"
     rows = []
@@ -79,16 +80,34 @@ def main() -> None:
             rows.append(row)
 
     # CSV compacto facilita inspeção humana; JSONL preserva a resposta completa e os metadados.
-    pd.DataFrame(rows).drop(columns=["generation_metadata"], errors="ignore").to_csv(output / "narratives_index.csv", index=False, encoding="utf-8")
-    write_json(output / "narrative_generation_manifest.json", {
-        "generator_id": config["narrative"]["generator_id"],
+    pd.DataFrame(rows).drop(columns=["generation_metadata"], errors="ignore").to_csv(
+        output / "narratives_index.csv", index=False, encoding="utf-8"
+    )
+
+    api_called = any(bool(row["generation_metadata"].get("api_called")) for row in rows)
+    provider = str(config["narrative"].get("provider", "template"))
+    manifest = {
+        "provider": provider,
+        "generator_id": getattr(generator, "generator_id", config["narrative"].get("generator_id")),
         "prompt_version": config["narrative"]["prompt_version"],
         "narratives": len(rows),
-        "api_called": False,
-        "forbidden_input_keys": config["narrative"]["forbidden_input_keys"],
+        "api_called": api_called,
+        "forbidden_input_keys": sorted(getattr(generator, "forbidden_input_keys", config["narrative"]["forbidden_input_keys"])),
         "seed_base": effective_seed(config),
-    })
-    logger.info("Foram geradas %d narrativas sintéticas em %s", len(rows), output_file)
+    }
+    if provider.lower() == "gemini":
+        gemini_config = config["narrative"].get("gemini", {})
+        manifest["model_id"] = gemini_config.get("model_id")
+        manifest["api_key_env"] = gemini_config.get("api_key_env")
+        manifest["temperature"] = gemini_config.get("temperature")
+        manifest["max_output_tokens"] = gemini_config.get("max_output_tokens")
+    write_json(output / "narrative_generation_manifest.json", manifest)
+    logger.info(
+        "Foram geradas %d narrativas sintéticas com provedor %s em %s",
+        len(rows),
+        provider,
+        output_file,
+    )
 
 
 if __name__ == "__main__":

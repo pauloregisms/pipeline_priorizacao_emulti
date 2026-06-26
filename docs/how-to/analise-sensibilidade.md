@@ -62,6 +62,6 @@ Compare distribuições de métricas entre cenários, não apenas o maior valor.
 - kappa ponderado e erro ordinal;
 - Brier score e inclinação de calibração;
 - desempenho do extrator;
-- distribuição de `Yref`.
+- distribuição de `prioridade_referencia`.
 
 A diferença entre cenários é uma propriedade do gerador e das hipóteses testadas. Ela não estima robustez clínica em população real.

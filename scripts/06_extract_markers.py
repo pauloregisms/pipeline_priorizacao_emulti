@@ -1,4 +1,4 @@
-"""Etapa 6: extrai Z-hat das narrativas por regras, dicionário e negação simples."""
+"""Etapa 6: extrai marcadores_extraidos das narrativas por regras, dicionário e negação simples."""
 
 from __future__ import annotations
 
@@ -36,12 +36,12 @@ def main() -> None:
     )
     extracted = extractor.extract(narratives)
     output = stage_dir(config, args.run_id, "06_extraction")
-    save_csv(extracted, output / "markers_extracted.csv")
+    save_csv(extracted, output / "marcadores_extraidos.csv")
     write_json(output / "extraction_manifest.json", {
         "extractor_id": extractor.extractor_id,
         "ontology_version": extractor.ontology_version,
         "extraction_flip_rate": extractor.flip_rate,
-        "note": "Linha de base independente da geração textual; não utiliza y_ref.",
+        "note": "Linha de base independente da geração textual; não utiliza prioridade_referencia.",
     })
     logger.info("Marcadores extraídos para %d narrativas", len(extracted))
 

@@ -5,12 +5,12 @@ Cada execução usa `artifacts/<run_id>/`. Os diretórios preservam a ordem meto
 | Diretório | Arquivos relevantes | Finalidade |
 |---|---|---|
 | `00_workspace/` | snapshot do ambiente e configuração | reprodutibilidade computacional |
-| `01_profiles/` | `profiles.csv`, metadados | `X`, `V`, `U`, `Z*` |
-| `02_psychometrics/` | `psychometrics.csv`, metadados | itens e totais de `S` |
+| `01_profiles/` | `profiles.csv`, metadados | `dados_estruturados`, `vulnerabilidade_social`, `gravidade_latente_auditoria`, `marcadores_origem` |
+| `02_psychometrics/` | `psychometrics.csv`, metadados | itens e totais de `indicadores_psicometricos` |
 | `03_quality_control/` | tabelas de checagem, `quality_summary.json` | plausibilidade e consistência |
-| `04_narratives/` | `narratives.jsonl`, índice e manifest | `T` e metadados do gerador |
-| `05_priority/` | `priority_reference.csv`, metadata | `Yref` e evidências da matriz |
-| `06_extraction/` | `markers_extracted.csv`, metadata | `Zhat` |
+| `04_narratives/` | `narratives.jsonl`, índice e manifest | `narrativa_clinica`, provedor, modelo/parâmetros quando aplicável e metadados do gerador sem credenciais |
+| `05_priority/` | `prioridade_referencia.csv`, metadata | `prioridade_referencia` e evidências da matriz |
+| `06_extraction/` | `marcadores_extraidos.csv`, metadata | `marcadores_extraidos` |
 | `07_annotation/` | template, auditoria, instruções | anotação humana independente |
 | `08_extraction_validation/` | métricas sintéticas, kappa e resumo | validação da extração |
 | `09_analytical_sets/` | três CSVs analíticos | comparação de conjuntos |

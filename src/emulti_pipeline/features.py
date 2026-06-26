@@ -14,7 +14,7 @@ def build_analytical_sets(
     extracted: pd.DataFrame,
     config: dict[str, Any],
 ) -> dict[str, pd.DataFrame]:
-    """Cria os três conjuntos: X+S, X+S+Z* e X+S+Z-hat.
+    """Cria os três conjuntos: dados_estruturados + indicadores_psicometricos, dados_estruturados + indicadores_psicometricos + marcadores_origem e dados_estruturados + indicadores_psicometricos + marcadores_extraidos.
 
     A gravidade latente e qualquer coluna de auditoria do gerador são retiradas antes
     da modelagem, porque não estariam disponíveis no cenário conceitual de encaminhamento.
@@ -23,26 +23,26 @@ def build_analytical_sets(
     merged = merged.merge(priority, on="patient_id", how="inner", validate="one_to_one")
     merged = merged.merge(extracted, on="patient_id", how="inner", validate="one_to_one")
 
-    # X: atributos estruturados, sem Z* e sem variável latente de auditoria.
+    # X: atributos estruturados, sem marcadores_origem e sem variável de auditoria de gravidade latente.
     profile_cols = [
         c for c in profiles.columns
-        if c not in {"patient_id", "u_latent_audit_only"} and not c.startswith("ztrue_")
+        if c not in {"patient_id", "gravidade_latente_auditoria"} and not c.startswith("marcadores_origem_")
     ]
     # S: totais; itens podem ser usados em análise de sensibilidade, mas o cenário-base
     # mantém escores resumidos para reduzir dimensionalidade e tornar o fluxo interpretável.
     score_cols = ["phq9_total", "gad7_total", "idate_estado_total"]
-    target_cols = ["patient_id", "y_ref", "y_ref_code", "urgent_rule_triggered"]
-    ztrue_cols = [c for c in profiles.columns if c.startswith("ztrue_")]
-    zhat_cols = [
+    target_cols = ["patient_id", "prioridade_referencia", "prioridade_referencia_codigo", "urgent_rule_triggered"]
+    marcadores_origem_cols = [c for c in profiles.columns if c.startswith("marcadores_origem_")]
+    marcadores_extraidos_cols = [
         c for c in extracted.columns
-        if c.startswith("zhat_") and not c.endswith("_evidence")
+        if c.startswith("marcadores_extraidos_") and not c.endswith("_evidence")
     ]
 
     base = merged[target_cols + profile_cols + score_cols].copy()
-    upper_bound = merged[target_cols + profile_cols + score_cols + ztrue_cols].copy()
-    operational = merged[target_cols + profile_cols + score_cols + zhat_cols].copy()
+    upper_bound = merged[target_cols + profile_cols + score_cols + marcadores_origem_cols].copy()
+    operational = merged[target_cols + profile_cols + score_cols + marcadores_extraidos_cols].copy()
 
-    # Opção de estresse: inserir ausência em dados observáveis; nunca em y_ref.
+    # Opção de estresse: inserir ausência em dados observáveis; nunca em prioridade_referencia.
     from .quality import apply_missingness_scenario
 
     protected = target_cols
@@ -53,6 +53,6 @@ def build_analytical_sets(
 
     return {
         "01_estruturados_escores": base,
-        "02_limite_superior_ztrue": upper_bound,
-        "03_operacional_zhat": operational,
+        "02_limite_superior_marcadores_origem": upper_bound,
+        "03_operacional_marcadores_extraidos": operational,
     }

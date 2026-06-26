@@ -20,7 +20,7 @@ from emulti_pipeline.visualization import (
 )
 
 
-DEFAULT_DATASET = "03_operacional_zhat"
+DEFAULT_DATASET = "03_operacional_marcadores_extraidos"
 
 
 def _select_model(modeling_summary: pd.DataFrame, dataset: str, requested_model: str) -> tuple[str, str]:
@@ -67,7 +67,7 @@ def main() -> None:
     parser.add_argument(
         "--include-reference",
         action="store_true",
-        help="Inclui Yref e concordância. Use apenas para avaliação sintética, não para visão operacional.",
+        help="Inclui prioridade_referencia e concordância. Use apenas para avaliação sintética, não para visão operacional.",
     )
     args = parser.parse_args()
 
@@ -90,7 +90,7 @@ def main() -> None:
 
     profiles = pd.read_csv(run_root / "01_profiles" / "profiles.csv")
     psychometrics = pd.read_csv(run_root / "02_psychometrics" / "psychometrics.csv")
-    extracted = pd.read_csv(run_root / "06_extraction" / "markers_extracted.csv")
+    extracted = pd.read_csv(run_root / "06_extraction" / "marcadores_extraidos.csv")
     predictions = pd.read_csv(predictions_path)
 
     table = build_simplified_classification_table(

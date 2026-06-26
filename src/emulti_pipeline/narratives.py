@@ -1,61 +1,153 @@
-"""Interface desacoplada e simulador de geração de narrativas clínicas.
+"""Contratos, validações e fábrica para geração de narrativas clínicas sintéticas.
 
-A classe ``TemplateNarrativeGenerator`` é uma simulação local de um serviço de LLM.
-Ela existe para permitir testes end-to-end sem chamar APIs, mantendo estáveis os
-contratos de entrada e saída. Uma implementação futura de API deve herdar de
-``BaseNarrativeGenerator`` e retornar os mesmos campos de ``NarrativeResponse``.
+A geração textual permanece desacoplada do restante do pipeline. O projeto inclui:
+
+- ``TemplateNarrativeGenerator``: simulador local, determinístico por semente;
+- ``GeminiNarrativeGenerator``: adaptador opcional para a Gemini API;
+- ``create_narrative_generator``: fábrica configurável por YAML.
+
+Todos os provedores recebem somente ``NarrativeRequest`` e devem devolver
+``NarrativeResponse``. A prioridade de referência simulada e qualquer pista direta
+do rótulo são bloqueadas antes da montagem do prompt.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 import numpy as np
 
 from .utils import json_hash
 
 
+# Esta lista protege a fronteira metodológica do pipeline. Ela pode ser estendida
+# no YAML, mas nunca deve ser reduzida por um adaptador de provedor.
+DEFAULT_FORBIDDEN_NARRATIVE_KEYS = frozenset(
+    {
+        "prioridade_referencia",
+        "prioridade_referencia_codigo",
+        "prioridade_prevista",
+        "prioridade_prevista_codigo",
+        "priority",
+        "priority_code",
+        "prioridade",
+        "priority_label",
+        "label",
+        "target",
+        "yref",
+        "yhat",
+    }
+)
+
+
 @dataclass(frozen=True)
 class NarrativeRequest:
     """Dados permitidos para geração da narrativa de um perfil sintético.
 
-    ``priority`` e qualquer campo que revele o rótulo são proibidos por construção.
+    O contrato não possui campo de prioridade. O adaptador ainda valida o conteúdo
+    dos dicionários para impedir que chaves proibidas sejam inseridas indiretamente.
     """
 
     patient_id: str
     seed: int
-    structured_profile: dict[str, Any]
-    psychometrics: dict[str, Any]
-    true_markers: dict[str, Any]
+    dados_estruturados: dict[str, Any]
+    indicadores_psicometricos: dict[str, Any]
+    marcadores_origem: dict[str, Any]
     prompt_version: str
 
 
 @dataclass(frozen=True)
 class NarrativeResponse:
-    """Contrato de retorno preservado para simulador local ou API futura."""
+    """Contrato de retorno preservado para simulador local ou provedor de API."""
 
     patient_id: str
     narrative_id: str
     subjective: str
     assessment: str
-    full_text: str
+    narrativa_clinica: str
     generator_id: str
     prompt_version: str
     input_hash: str
     generation_metadata: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
+        """Converte a resposta para estrutura serializável em JSON."""
         return asdict(self)
 
 
 class BaseNarrativeGenerator(ABC):
-    """Interface mínima que qualquer adaptador de LLM futuro deverá implementar."""
+    """Interface mínima que qualquer adaptador de LLM deve implementar."""
 
     @abstractmethod
     def generate(self, request: NarrativeRequest) -> NarrativeResponse:
-        """Gera uma narrativa sem receber rótulo de prioridade ou informação equivalente."""
+        """Gera narrativa sem receber rótulo de prioridade ou informação equivalente."""
+
+
+def narrative_input_payload(request: NarrativeRequest) -> dict[str, Any]:
+    """Retorna exclusivamente o payload metodologicamente autorizado.
+
+    A função é compartilhada para que o hash de entrada tenha a mesma semântica em
+    todos os provedores. ``patient_id`` e ``seed`` entram no hash de rastreabilidade,
+    mas não precisam ser enviados ao modelo de linguagem.
+    """
+    return {
+        "patient_id": request.patient_id,
+        "seed": request.seed,
+        "dados_estruturados": request.dados_estruturados,
+        "indicadores_psicometricos": request.indicadores_psicometricos,
+        "marcadores_origem": request.marcadores_origem,
+        "prompt_version": request.prompt_version,
+    }
+
+
+def find_forbidden_narrative_keys(
+    payload: Any,
+    forbidden_keys: Iterable[str] | None = None,
+    path: str = "",
+) -> list[str]:
+    """Localiza recursivamente chaves proibidas em um payload de narrativa.
+
+    A verificação recursiva impede que uma prioridade seja escondida em dicionários
+    aninhados. O retorno traz caminhos legíveis para facilitar depuração sem expor
+    valores do payload.
+    """
+    forbidden = {
+        str(key).strip().lower()
+        for key in (forbidden_keys or DEFAULT_FORBIDDEN_NARRATIVE_KEYS)
+    }
+    matches: list[str] = []
+
+    if isinstance(payload, Mapping):
+        for key, value in payload.items():
+            key_text = str(key)
+            child_path = f"{path}.{key_text}" if path else key_text
+            if key_text.strip().lower() in forbidden:
+                matches.append(child_path)
+            matches.extend(find_forbidden_narrative_keys(value, forbidden, child_path))
+    elif isinstance(payload, list):
+        for index, value in enumerate(payload):
+            child_path = f"{path}[{index}]"
+            matches.extend(find_forbidden_narrative_keys(value, forbidden, child_path))
+
+    return matches
+
+
+def validate_narrative_request(
+    request: NarrativeRequest,
+    forbidden_keys: Iterable[str] | None = None,
+) -> None:
+    """Falha explicitamente quando uma requisição inclui um campo proibido."""
+    leaked = find_forbidden_narrative_keys(
+        narrative_input_payload(request),
+        forbidden_keys=forbidden_keys,
+    )
+    if leaked:
+        raise ValueError(
+            "A requisição para narrativa contém chaves proibidas que podem causar "
+            f"vazamento de rótulo: {sorted(leaked)}"
+        )
 
 
 def _score_description(phq: int, gad: int, stai: int) -> str:
@@ -87,21 +179,23 @@ class TemplateNarrativeGenerator(BaseNarrativeGenerator):
     permitidos da requisição.
     """
 
-    def __init__(self, generator_id: str = "template-simulator-v1") -> None:
+    def __init__(
+        self,
+        generator_id: str = "template-simulator-v1",
+        forbidden_input_keys: Iterable[str] | None = None,
+    ) -> None:
         self.generator_id = generator_id
+        self.forbidden_input_keys = tuple(
+            set(DEFAULT_FORBIDDEN_NARRATIVE_KEYS).union(forbidden_input_keys or ())
+        )
 
     def generate(self, request: NarrativeRequest) -> NarrativeResponse:
-        # Defesa metodológica: qualquer chave proibida indica vazamento de rótulo.
-        forbidden = {"y_ref", "priority", "prioridade", "priority_code"}
-        request_keys = set(request.structured_profile) | set(request.psychometrics) | set(request.true_markers)
-        leaked = forbidden.intersection(request_keys)
-        if leaked:
-            raise ValueError(f"A requisição para narrativa contém campos proibidos: {sorted(leaked)}")
+        validate_narrative_request(request, self.forbidden_input_keys)
 
         rng = np.random.default_rng(request.seed)
-        p = request.structured_profile
-        s = request.psychometrics
-        z = request.true_markers
+        p = request.dados_estruturados
+        s = request.indicadores_psicometricos
+        z = request.marcadores_origem
 
         symptom_text = _score_description(
             int(s["phq9_total"]), int(s["gad7_total"]), int(s["idate_estado_total"])
@@ -116,7 +210,8 @@ class TemplateNarrativeGenerator(BaseNarrativeGenerator):
             "Quadro compatível, no cenário sintético, com necessidade de acompanhamento conforme evolução e rede de suporte.",
         ]
 
-        # As frases abaixo são selecionadas somente a partir de Z*. Não há acesso a Yref.
+        # As frases abaixo são selecionadas somente a partir de marcadores_origem.
+        # Não há acesso a prioridade_referencia.
         if int(z["ideacao_suicida"]) == 1:
             if int(z["planejamento_suicida"]) == 1:
                 subjective_parts.append("Relata pensamentos de morte atuais e planejamento de autoagressão.")
@@ -146,17 +241,9 @@ class TemplateNarrativeGenerator(BaseNarrativeGenerator):
         opening = rng.choice(["Usuário", "Pessoa acompanhada", "Paciente fictício"])
         subjective = f"{opening}: " + " ".join(subjective_parts)
         assessment = "Avaliação: " + " ".join(assessment_parts)
-        full_text = f"S - {subjective}\nA - {assessment}"
+        narrativa_clinica = f"S - {subjective}\nA - {assessment}"
 
-        input_payload = {
-            "patient_id": request.patient_id,
-            "seed": request.seed,
-            "structured_profile": request.structured_profile,
-            "psychometrics": request.psychometrics,
-            "true_markers": request.true_markers,
-            "prompt_version": request.prompt_version,
-        }
-        input_hash = json_hash(input_payload)
+        input_hash = json_hash(narrative_input_payload(request))
         narrative_id = f"NAR-{request.patient_id}-{input_hash[:10]}"
 
         return NarrativeResponse(
@@ -164,7 +251,7 @@ class TemplateNarrativeGenerator(BaseNarrativeGenerator):
             narrative_id=narrative_id,
             subjective=subjective,
             assessment=assessment,
-            full_text=full_text,
+            narrativa_clinica=narrativa_clinica,
             generator_id=self.generator_id,
             prompt_version=request.prompt_version,
             input_hash=input_hash,
@@ -177,15 +264,58 @@ class TemplateNarrativeGenerator(BaseNarrativeGenerator):
         )
 
 
-class FutureApiNarrativeGenerator(BaseNarrativeGenerator):
-    """Esqueleto explícito para futura integração com API.
+def create_narrative_generator(narrative_config: Mapping[str, Any]) -> BaseNarrativeGenerator:
+    """Instancia o provedor textual configurado sem acoplar scripts ao fornecedor.
 
-    Esta classe não chama serviços externos. Ela documenta o ponto de extensão e evita
-    misturar código de credenciais/HTTP com o restante do pipeline.
+    O valor padrão é ``template`` para preservar execução local sem credenciais. O
+    provedor ``gemini`` só é instanciado quando selecionado explicitamente no YAML.
     """
+    provider = str(narrative_config.get("provider", "template")).strip().lower()
+    forbidden_input_keys = narrative_config.get("forbidden_input_keys", ())
+
+    if provider == "template":
+        return TemplateNarrativeGenerator(
+            generator_id=str(narrative_config.get("generator_id", "template-simulator-v1")),
+            forbidden_input_keys=forbidden_input_keys,
+        )
+
+    if provider == "gemini":
+        # Importação tardia: quem usa somente o simulador local não precisa importar
+        # nem inicializar dependências da Gemini API.
+        from .narrative_providers.gemini import GeminiNarrativeGenerator
+
+        gemini_config = narrative_config.get("gemini", {})
+        if not isinstance(gemini_config, Mapping):
+            raise ValueError("O bloco narrative.gemini deve ser um dicionário YAML.")
+
+        return GeminiNarrativeGenerator(
+            model_id=str(gemini_config.get("model_id", "gemini-3.1-flash-lite")),
+            generator_id=str(
+                gemini_config.get(
+                    "generator_id",
+                    f"gemini-api-{gemini_config.get('model_id', 'model')}",
+                )
+            ),
+            api_key_env=str(gemini_config.get("api_key_env", "GEMINI_API_KEY")),
+            temperature=float(gemini_config.get("temperature", 1.0)),
+            max_output_tokens=int(gemini_config.get("max_output_tokens", 500)),
+            max_retries=int(narrative_config.get("max_retries", 2)),
+            retry_backoff_seconds=float(gemini_config.get("retry_backoff_seconds", 2.0)),
+            language=str(narrative_config.get("language", "pt-BR")),
+            forbidden_input_keys=forbidden_input_keys,
+        )
+
+    raise ValueError(
+        f"Provedor de narrativa desconhecido: {provider!r}. "
+        "Use 'template' ou 'gemini'."
+    )
+
+
+class FutureApiNarrativeGenerator(BaseNarrativeGenerator):
+    """Esqueleto genérico para futuras integrações que não usem Gemini."""
 
     def generate(self, request: NarrativeRequest) -> NarrativeResponse:  # pragma: no cover
         raise NotImplementedError(
             "Implemente um adaptador de API que herde de BaseNarrativeGenerator. "
-            "O adaptador deve respeitar NarrativeRequest/NarrativeResponse e nunca enviar y_ref."
+            "O adaptador deve respeitar NarrativeRequest/NarrativeResponse e nunca enviar prioridade_referencia."
         )

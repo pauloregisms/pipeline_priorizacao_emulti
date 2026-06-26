@@ -1,0 +1,5 @@
+# Teste curto do provedor Gemini. Executar somente até a etapa 04.
+extends: "gemini.yaml"
+
+simulation:
+  n_records: 20

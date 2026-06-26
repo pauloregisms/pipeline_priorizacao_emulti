@@ -41,12 +41,12 @@ def validate_profile_ranges(profiles: pd.DataFrame, config: dict[str, Any]) -> t
     )
     add_check(
         "planejamento_requer_ideacao",
-        ((profiles["ztrue_planejamento_suicida"] <= profiles["ztrue_ideacao_suicida"]).all()),
+        ((profiles["marcadores_origem_planejamento_suicida"] <= profiles["marcadores_origem_ideacao_suicida"]).all()),
         "Não deve existir planejamento sem ideação no cenário-base.",
     )
     add_check(
         "autoagressao_requer_planejamento",
-        ((profiles["ztrue_autoagressao_iminente"] <= profiles["ztrue_planejamento_suicida"]).all()),
+        ((profiles["marcadores_origem_autoagressao_iminente"] <= profiles["marcadores_origem_planejamento_suicida"]).all()),
         "Não deve existir autoagressão iminente sem planejamento no cenário-base.",
     )
     add_check(

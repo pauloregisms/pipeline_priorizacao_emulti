@@ -24,7 +24,7 @@ As relações entre vulnerabilidade, gravidade latente, escalas, marcadores e pr
 
 O extrator de referência é baseado em padrões textuais. Ele é auditável e independente do gerador, mas não cobre toda a complexidade de textos clínicos. Temporalidade, incerteza, severidade e experienciador são tratados por regras simples.
 
-A validação contra `Z*` demonstra fidelidade ao cenário gerado. Ela não substitui anotação humana independente. O projeto prevê uma amostra estratificada para dupla anotação e cálculo de concordância.
+A validação contra `marcadores_origem` demonstra fidelidade ao cenário gerado. Ela não substitui anotação humana independente. O projeto prevê uma amostra estratificada para dupla anotação e cálculo de concordância.
 
 ## Limites da matriz de prioridade
 
@@ -35,8 +35,8 @@ A matriz implementada é ilustrativa. Antes de qualquer análise de dissertaçã
 ## Salvaguardas obrigatórias
 
 - Não inserir dados reais ou identificáveis.
-- Não enviar `Yref` ou informação equivalente ao gerador de narrativas.
-- Não usar `u_latent_audit_only` no treinamento ou avaliação de classificadores.
+- Não enviar `prioridade_referencia` ou informação equivalente ao gerador de narrativas.
+- Não usar `gravidade_latente_auditoria` no treinamento ou avaliação de classificadores.
 - Não substituir o extrator independente por um LLM sem manter uma linha de base auditável.
 - Não publicar credenciais ou narrativas que possam conter informação real.
 - Não integrar resultados a fluxos assistenciais.

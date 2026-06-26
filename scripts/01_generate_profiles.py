@@ -1,4 +1,4 @@
-"""Etapa 1: gera X, V, U e Z* do modelo estrutural sintético."""
+"""Etapa 1: gera dados estruturados, vulnerabilidade social, gravidade latente e marcadores de origem do modelo estrutural sintético."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ def main() -> None:
     logger = setup_logging("01_generate_profiles")
     seed = effective_seed(config)
 
-    # A saída contém U apenas para auditoria do gerador. Scripts de modelagem removem
+    # A saída contém gravidade_latente_auditoria apenas para auditoria do gerador. Scripts de modelagem removem
     # explicitamente esta variável para impedir vazamento de informação latente.
     result = generate_profiles(config, seed)
     output = stage_dir(config, args.run_id, "01_profiles")

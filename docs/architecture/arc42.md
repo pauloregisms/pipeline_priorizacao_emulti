@@ -16,8 +16,8 @@ O sistema deve ser:
 - Python é a linguagem de implementação.
 - Dados e narrativas são inteiramente sintéticos.
 - Parâmetros devem ser configuráveis e documentados.
-- `Yref` não pode entrar na geração textual.
-- `U` não pode entrar na modelagem.
+- `prioridade_referencia` não pode entrar na geração textual.
+- `gravidade_latente_auditoria` não pode entrar na modelagem.
 - A saída do gerador textual deve obedecer a contratos estáveis.
 - A validação é interna e orientada a simulação; não é validação clínica.
 
@@ -44,12 +44,12 @@ A solução é uma pipeline orientada a arquivos e scripts:
 | Bloco | Responsabilidade |
 |---|---|
 | Configuração | carregar YAML e validar contexto básico |
-| Simulação | gerar perfis, `U`, `Z*` e escalas |
+| Simulação | gerar perfis, `gravidade_latente_auditoria`, `marcadores_origem` e escalas |
 | Qualidade | verificar invariantes e propriedades psicométricas |
-| Narrativas | criar `T` por contrato desacoplado |
-| Prioridade | gerar `Yref` pela matriz simulada |
-| Extração | transformar texto em `Zhat` |
-| Conjuntos analíticos | construir `X+S`, `X+S+Z*`, `X+S+Zhat` |
+| Narrativas | criar `narrativa_clinica` por contrato desacoplado |
+| Prioridade | gerar `prioridade_referencia` pela matriz simulada |
+| Extração | transformar texto em `marcadores_extraidos` |
+| Conjuntos analíticos | construir `dados_estruturados + indicadores_psicometricos`, `dados_estruturados + indicadores_psicometricos + marcadores_origem`, `dados_estruturados + indicadores_psicometricos + marcadores_extraidos` |
 | Modelagem | comparar linha de base e classificadores |
 | Avaliação | métricas, calibração, bootstrap |
 | Explicabilidade | coeficientes e SHAP no teste |

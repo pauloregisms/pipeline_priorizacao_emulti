@@ -66,6 +66,32 @@ print(os.getcwd())
 
 O cenário-base usa CPU. Não há necessidade de GPU, porque a geração de narrativa inicial é simulada por templates e os modelos são tabulares.
 
+## 6A. Opcional: testar o provedor Gemini
+
+O cenário-base continua usando o simulador local. Para usar a Gemini API, informe a
+chave por entrada oculta e execute primeiro o cenário de teste curto:
+
+```python
+import os
+from getpass import getpass
+
+os.environ["GEMINI_API_KEY"] = getpass("Cole sua chave Gemini: ")
+```
+
+```python
+!python scripts/run_pipeline.py \
+  --config config/gemini_smoke.yaml \
+  --run-id gemini_smoke \
+  --skip-explanations \
+  --skip-report \
+  --stop-after 04_generate_narratives.py
+```
+
+Não salve a chave no notebook e não compartilhe a célula preenchida. Depois de
+inspecionar `artifacts/gemini_smoke/04_narratives/`, a execução completa pode usar
+`config/gemini.yaml`. Consulte também [Como gerar narrativas com o provedor
+Gemini](../how-to/usar-provedor-gemini.md).
+
 ## 7. Persistir resultados no Drive
 
 ```python

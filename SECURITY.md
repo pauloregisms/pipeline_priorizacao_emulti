@@ -11,13 +11,14 @@ Este repositório foi projetado para trabalhar exclusivamente com **dados sinté
 
 ## Credenciais de APIs futuras
 
-A versão atual não chama serviços externos. Caso um adaptador de LLM seja implementado no futuro:
+O projeto inclui o adaptador opcional `GeminiNarrativeGenerator`, mas o modo padrão continua sendo local (`template`). Ao usar Gemini ou outro adaptador externo:
 
 - armazene credenciais apenas em variáveis de ambiente, cofre de segredos ou configuração local ignorada pelo Git;
 - nunca grave credenciais em YAML, notebooks compartilhados, artefatos ou logs;
 - use privilégios mínimos e rotação de chaves quando o serviço permitir;
 - registre metadados do modelo e da execução, mas não conteúdo sensível;
-- confirme que as políticas do provedor são compatíveis com o uso exclusivamente sintético do projeto.
+- confirme que as políticas do provedor são compatíveis com o uso exclusivamente sintético do projeto;
+- não tente desativar filtros de segurança do provedor para contornar falhas de geração; registre e avalie as falhas.
 
 Um arquivo `.env.example` pode documentar nomes de variáveis sem conter valores reais.
 
@@ -35,7 +36,7 @@ Não publique detalhes de vulnerabilidades, exposição de credenciais ou inclus
 
 Uma falha de segurança também pode ser metodológica. São consideradas críticas as alterações que:
 
-- enviem `Yref` ou pistas equivalentes ao gerador de narrativas;
-- misturem `Z*` e `Zhat` sem declaração explícita;
-- introduzam variáveis de auditoria, como `u_latent_audit_only`, nos classificadores;
+- enviem `prioridade_referencia` ou pistas equivalentes ao gerador de narrativas;
+- misturem `marcadores_origem` e `marcadores_extraidos` sem declaração explícita;
+- introduzam variáveis de auditoria, como `gravidade_latente_auditoria`, nos classificadores;
 - permitam execução com dados reais sem uma avaliação ética e institucional independente.

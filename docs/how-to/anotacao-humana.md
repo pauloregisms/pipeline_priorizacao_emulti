@@ -1,6 +1,6 @@
 # Como executar a anotação humana de narrativas
 
-A anotação humana complementa a validação contra `Z*`. Ela não deve ser feita com acesso à prioridade de referência, para evitar viés de confirmação.
+A anotação humana complementa a validação contra `marcadores_origem`. Ela não deve ser feita com acesso à prioridade de referência, para evitar viés de confirmação.
 
 ## 1. Criar amostra estratificada
 
@@ -20,7 +20,7 @@ artifacts/baseline/07_annotation/annotation_sampling_audit.csv
 artifacts/baseline/07_annotation/annotation_instructions.json
 ```
 
-O arquivo `annotation_template.csv` contém `patient_id`, texto e colunas vazias de anotação. O arquivo de auditoria contém `Yref` e deve permanecer separado dos anotadores.
+O arquivo `annotation_template.csv` contém `patient_id`, texto e colunas vazias de anotação. O arquivo de auditoria contém `prioridade_referencia` e deve permanecer separado dos anotadores.
 
 ## 2. Preparar dois arquivos independentes
 
@@ -61,7 +61,7 @@ python scripts/08_validate_extraction.py \
   --annotator-b caminho/annotation_annotator_b.csv
 ```
 
-O script produz concordância de Cohen para presença de cada marcador e também mantém métricas do extrator contra `Z*`.
+O script produz concordância de Cohen para presença de cada marcador e também mantém métricas do extrator contra `marcadores_origem`.
 
 ## 5. Adjudicar divergências
 

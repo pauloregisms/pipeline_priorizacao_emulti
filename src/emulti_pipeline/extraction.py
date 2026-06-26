@@ -116,7 +116,7 @@ class RuleBasedClinicalExtractor:
 
     def extract(self, narrative_frame: pd.DataFrame) -> pd.DataFrame:
         """Extrai marcadores e atributos de todas as narrativas recebidas."""
-        required = {"patient_id", "full_text"}
+        required = {"patient_id", "narrativa_clinica"}
         missing = required - set(narrative_frame.columns)
         if missing:
             raise ValueError(f"Narrativas sem colunas necessárias: {sorted(missing)}")
@@ -124,7 +124,7 @@ class RuleBasedClinicalExtractor:
         rows: list[dict[str, Any]] = []
 
         for _, record in narrative_frame.iterrows():
-            text = str(record["full_text"])
+            text = str(record["narrativa_clinica"])
             sentence_list = _sentences(text)
             row: dict[str, Any] = {
                 "patient_id": record["patient_id"],
@@ -149,7 +149,7 @@ class RuleBasedClinicalExtractor:
                     is_present = 1 - is_present
                     is_negated = 1 - is_present if is_present == 0 else 0
 
-                prefix = f"zhat_{marker}"
+                prefix = f"marcadores_extraidos_{marker}"
                 row[f"{prefix}_present"] = is_present
                 row[f"{prefix}_negated"] = is_negated
                 row[f"{prefix}_temporality"] = _temporal_label(evidence_sentence)
@@ -163,7 +163,7 @@ class RuleBasedClinicalExtractor:
 
 
 def extraction_reference_table(profiles: pd.DataFrame) -> pd.DataFrame:
-    """Converte os marcadores Z* em formato comparável ao extrator.
+    """Converte os marcadores marcadores_origem em formato comparável ao extrator.
 
     A referência sintética não substitui uma anotação humana; ela permite medir se o
     texto e o extrator preservam o cenário gerado. Anotadores independentes podem ser
@@ -172,12 +172,12 @@ def extraction_reference_table(profiles: pd.DataFrame) -> pd.DataFrame:
     result = pd.DataFrame({"patient_id": profiles["patient_id"]})
     for marker in MARKER_ONTOLOGY:
         if marker == "comprometimento_funcional":
-            result[f"ztrue_{marker}_present"] = (profiles["ztrue_comprometimento_funcional"] > 0).astype(int)
-            result[f"ztrue_{marker}_severity_code"] = profiles["ztrue_comprometimento_funcional"].astype(int)
+            result[f"marcadores_origem_{marker}_present"] = (profiles["marcadores_origem_comprometimento_funcional"] > 0).astype(int)
+            result[f"marcadores_origem_{marker}_severity_code"] = profiles["marcadores_origem_comprometimento_funcional"].astype(int)
         else:
-            source = f"ztrue_{marker}"
+            source = f"marcadores_origem_{marker}"
             if source not in profiles:
                 raise ValueError(f"Marcador verdadeiro não encontrado: {source}")
-            result[f"ztrue_{marker}_present"] = profiles[source].astype(int)
-            result[f"ztrue_{marker}_severity_code"] = np.where(profiles[source].astype(int) == 1, 1, 0)
+            result[f"marcadores_origem_{marker}_present"] = profiles[source].astype(int)
+            result[f"marcadores_origem_{marker}_severity_code"] = np.where(profiles[source].astype(int) == 1, 1, 0)
     return result
